@@ -1,58 +1,60 @@
 # pulumi-atlas
 
-A Pulumi provider for managing RIPE Atlas measurements declaratively. Define measurement targets and probe sets in a Pulumi program, and the provider handles the full lifecycle: create, update probe sets in place, and stop measurements on destroy.
+A Pulumi provider for [RIPE Atlas](https://atlas.ripe.net) measurements. It wraps the [atlasctl](../atlasctl) domain library to bring RIPE Atlas measurement management into the Pulumi resource model: declare your measurements and probe selections in code, preview changes before applying, and let Pulumi track state.
 
-Built for Supabase's external edge telemetry project. See [atlasctl](../atlasctl) for the underlying domain library and the CLI workflow that generates probe selections.
+## Resources
 
-## How it fits together
+### `atlas:index:Measurement`
 
-```
-atlasctl select   ---->   probe IDs per round
-                                  |
-                                  v
-              pulumi up  (this provider)
-                                  |
-                                  v
-                       RIPE Atlas measurement IDs
-                                  |
-                                  v
-                        atlas_exporter  -->  Prometheus
-```
-
-`atlasctl select` scores and ranks the RIPE Atlas probe pool and outputs probe ID lists. Those lists are the input to this provider. The provider owns the measurement lifecycle. `atlas_exporter` subscribes to the resulting measurement IDs via the RIPE Atlas streaming WebSocket and exposes results as Prometheus metrics.
-
-## Resource
-
-One resource: `atlasctl:index:Measurement`
-
-Each resource maps to one `(name, round)` pair and one RIPE Atlas measurement ID.
+One Pulumi resource per RIPE Atlas measurement. Each maps to a single `(name, round)` pair and one measurement ID on the RIPE Atlas platform.
 
 ```typescript
 import * as atlas from "@pulumi/atlas";
 
-const canary = new atlas.Measurement("dns-canary-high", {
-    name: "dns-canary",
-    round: "high-freq",
-    target: "canary.supabase.co",
-    type: "dns",
-    af: 4,
+const dnsHigh = new atlas.Measurement("dns-canary-high", {
+    name:            "dns-canary",
+    round:           "high-freq",
+    target:          "canary.supabase.co",
+    type:            "dns",
     intervalSeconds: 60,
-    probeIds: [1001, 2002, 3003, 4004, 5005],
+    probeIds:        [1001, 2002, 3003],
 });
 
-export const msmId = canary.msmId;
+export const msmId = dnsHigh.msmId;
 ```
 
-### ProbeSelection
+**Inputs**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `name` | string | Logical measurement name. Immutable. |
+| `round` | string | Frequency tier name. Immutable. |
+| `target` | string | DNS name or IP address. Immutable. |
+| `type` | string | `dns`, `ping`, `tls`, or `traceroute`. Immutable. |
+| `af` | int | Address family: `4` or `6`. Default `4`. Immutable. |
+| `intervalSeconds` | int | Measurement interval in seconds (minimum 60). Immutable. |
+| `probeIds` | []int | RIPE Atlas probe IDs. Mutable in place. |
+
+Changing any immutable field stops the old measurement and creates a new one. Changing `probeIds` adds or removes participants on the running measurement without recreating it.
+
+**Outputs**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `msmId` | string | RIPE Atlas measurement ID assigned at creation. |
+
+---
+
+### `atlas:index:ProbeSelection`
+
+Runs the atlasctl probe selection algorithm and stores the results in Pulumi state. Round definitions, scoring weights, exclude tags, and geographic diversity are all read from an `atlasctl.yaml` config file — no duplication in the Pulumi program.
 
 ```typescript
 import * as atlas from "@pulumi/atlas";
 
-// Round definitions, scoring weights, excludeTags, and geoDiversity all come
-// from atlasctl.yaml — no duplication in the Pulumi program.
 const selection = new atlas.ProbeSelection("probe-selection", {
-    configPath:   "./atlasctl.yaml",
-    // snapshotPath: "./probes/snapshot.json"  // optional override; defaults to config snapshot field
+    configPath: "./atlasctl.yaml",
+    // snapshotPath: "./probes/snapshot.json"  // overrides the path in atlasctl.yaml if needed
 });
 
 const dnsHigh = new atlas.Measurement("dns-canary-high", {
@@ -65,27 +67,23 @@ const dnsHigh = new atlas.Measurement("dns-canary-high", {
 });
 ```
 
-`ProbeSelection` hashes both `atlasctl.yaml` and the snapshot file on every `pulumi up`. Editing the config or running `atlasctl refresh` triggers re-selection automatically, propagating updated probe IDs to all dependent `Measurement` resources.
+On every `pulumi up`, the provider hashes both `atlasctl.yaml` and the probe snapshot. If either has changed, selection re-runs and updated probe IDs propagate automatically to dependent `Measurement` resources.
 
-### Inputs
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `name` | string | Logical measurement name. Immutable. |
-| `round` | string | Frequency tier (e.g. `high-freq`). Immutable. |
-| `target` | string | DNS name or IP address. Immutable. |
-| `type` | string | `dns`, `ping`, `tls`, or `traceroute`. Immutable. |
-| `af` | int | Address family: `4` or `6`. Default `4`. Immutable. |
-| `intervalSeconds` | int | Measurement interval in seconds (minimum 60). Immutable. |
-| `probeIds` | []int | RIPE Atlas probe IDs. Mutable in place. |
-
-Changing any immutable field stops the old measurement and creates a new one. Changing `probeIds` adds or removes participants without recreating the measurement.
-
-### Outputs
+**Inputs**
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `msmId` | string | RIPE Atlas measurement ID assigned at creation. |
+| `configPath` | string | Path to `atlasctl.yaml`. |
+| `snapshotPath` | string | Optional. Overrides the snapshot path in the config. |
+
+**Outputs**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `roundProbeIds` | map[string][]int | Probe IDs per round name. |
+| `snapshotHash` | string | SHA-256 of the snapshot at last selection. |
+| `configHash` | string | SHA-256 of the config at last selection. |
+| `selectedAt` | string | RFC3339 timestamp of the last selection run. |
 
 ## Provider configuration
 
@@ -98,48 +96,38 @@ const provider = new atlas.Provider("atlas", {
 
 `apiKey` is marked secret and never appears in plain text in Pulumi state.
 
-## Measurement types and credit costs
+## Credit costs
 
-| Type | Credits per result | Notes |
-|------|--------------------|-------|
-| dns | 10 | UDP by default |
-| tls | 10 | TCP handshake + certificate check |
-| ping | 3 | ICMP |
-| traceroute | 30 | |
+| Type | Credits per result |
+|------|--------------------|
+| dns | 10 |
+| tls | 10 |
+| ping | 3 |
+| traceroute | 30 |
 
-One-off measurements cost 2x the periodic rate. All measurements created by this provider are periodic. Minimum interval is 60 seconds.
+Minimum measurement interval is 60 seconds. All measurements created by this provider are periodic.
 
 ## Building
 
 ```bash
-# Build the provider binary
-make build
-
-# Regenerate schema.json (commit the result)
-make schema
-
-# Generate language SDKs (not committed, generated in CI or locally)
-make sdk
-
-# Run tests
-make test
+make build    # build the provider binary
+make schema   # regenerate schema.json (commit the result)
+make sdk      # generate language SDKs (not committed)
+make test     # run tests
 ```
 
 Requires Go 1.26 or later and the Pulumi CLI.
 
 ## Release
 
-Tag a commit with a semver tag to trigger GoReleaser:
+Tag a commit to trigger GoReleaser:
 
 ```bash
-git tag v0.1.0
-git push origin v0.1.0
+git tag v0.1.0 && git push origin v0.1.0
 ```
-
-The release workflow builds binaries for Linux, macOS, and Windows (amd64 and arm64) and attaches them to the GitHub release.
 
 ## Requirements
 
-- `RIPE_ATLAS_API_KEY` environment variable set to a valid RIPE Atlas API key UUID
-- A RIPE Atlas account with sufficient credits for the measurements you intend to create
+- Go 1.26+
 - Pulumi CLI
+- `RIPE_ATLAS_API_KEY` set to a valid RIPE Atlas API key
