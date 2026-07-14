@@ -1,0 +1,3 @@
+name: ripe-atlas
+description: A Pulumi resource provider for ripe-atlas.
+language: schema

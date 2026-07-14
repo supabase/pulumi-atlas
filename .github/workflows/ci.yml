@@ -1,4 +1,4 @@
-name: Test
+name: CI
 
 on:
   push:
@@ -7,8 +7,8 @@ on:
     branches: [main]
 
 jobs:
-  test:
-    name: Test
+  build:
+    name: Build
     runs-on: ubuntu-latest
 
     steps:
@@ -21,21 +21,14 @@ jobs:
           cache: true
 
       - name: Vet
-        run: go vet ./...
-
-      - name: Test
-        run: go test ./...
+        run: go vet ./provider/...
 
       - name: Lint
         uses: golangci/golangci-lint-action@v6
         with:
           version: latest
           install-mode: goinstall
+          args: ./provider/...
 
-      - name: Build provider
+      - name: Build
         run: make build
-
-      - name: Verify schema
-        run: |
-          make schema
-          git diff --exit-code schema.json

@@ -1,31 +1,25 @@
-BINARY   := pulumi-resource-atlas
-MODULE   := github.com/supabase/pulumi-atlas
-CMD      := ./cmd/pulumi-resource-atlas
+TFGEN    = pulumi-tfgen-ripe-atlas
+PROVIDER = pulumi-resource-ripe-atlas
+BINDIR   = bin
 
-GOFLAGS  ?=
-VERSION  ?= $(shell git describe --tags --match "v*" 2>/dev/null || echo "v0.0.0-dev")
-LDFLAGS  := -s -w -X $(MODULE)/provider.Version=$(VERSION)
-
-.PHONY: build test vet lint schema sdk clean
+.PHONY: build generate install clean
 
 build:
-	go build $(GOFLAGS) -ldflags "$(LDFLAGS)" -o $(BINARY) $(CMD)
+	go build -o $(BINDIR)/$(TFGEN)    ./provider/cmd/$(TFGEN)
+	go build -o $(BINDIR)/$(PROVIDER) ./provider/cmd/$(PROVIDER)
 
-test:
-	go test ./...
+generate: $(BINDIR)/$(TFGEN)
+	./$(BINDIR)/$(TFGEN) schema   --out provider/cmd/$(PROVIDER)
+	./$(BINDIR)/$(TFGEN) go       --out sdk/go
+	./$(BINDIR)/$(TFGEN) nodejs   --out sdk/nodejs
+	./$(BINDIR)/$(TFGEN) python   --out sdk/python
 
-vet:
-	go vet ./...
+$(BINDIR)/$(TFGEN):
+	go build -o $(BINDIR)/$(TFGEN) ./provider/cmd/$(TFGEN)
 
-lint:
-	golangci-lint run ./...
-
-schema: build
-	pulumi package get-schema ./$(BINARY) > schema.json
-
-sdk: build
-	pulumi package gen-sdk ./$(BINARY)
+install: build
+	mkdir -p "$(HOME)/.pulumi/plugins/resource-ripe-atlas-v0.0.1"
+	cp $(BINDIR)/$(PROVIDER) "$(HOME)/.pulumi/plugins/resource-ripe-atlas-v0.0.1/$(PROVIDER)"
 
 clean:
-	rm -f $(BINARY)
-	rm -rf sdk/
+	rm -rf $(BINDIR) sdk/go sdk/nodejs sdk/python

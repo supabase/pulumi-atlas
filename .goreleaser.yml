@@ -5,9 +5,9 @@ before:
     - go mod tidy
 
 builds:
-  - id: pulumi-resource-atlas
-    main: ./cmd/pulumi-resource-atlas
-    binary: pulumi-resource-atlas
+  - id: pulumi-resource-ripe-atlas
+    main: ./provider/cmd/pulumi-resource-ripe-atlas
+    binary: pulumi-resource-ripe-atlas
     env:
       - CGO_ENABLED=0
     goos:
@@ -21,20 +21,23 @@ builds:
       - goos: windows
         goarch: arm64
     ldflags:
-      - -s -w -X github.com/supabase/pulumi-atlas/provider.Version={{.Version}}
+      - -s -w -X github.com/supabase/pulumi-atlas/provider/version.Version={{.Version}}
 
 archives:
-  - id: pulumi-resource-atlas
+  - id: pulumi-resource-ripe-atlas
+    builds:
+      - pulumi-resource-ripe-atlas
+    name_template: "{{ .ProjectName }}-v{{ .Version }}-{{ .Os }}-{{ .Arch }}"
     formats:
       - tar.gz
     format_overrides:
       - goos: windows
         formats:
           - zip
-    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
 
 checksum:
-  name_template: "checksums.txt"
+  name_template: "{{ .ProjectName }}_{{ .Version }}_checksums.txt"
+  algorithm: sha256
 
 changelog:
   sort: asc
