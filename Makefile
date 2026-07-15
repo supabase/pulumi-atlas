@@ -2,6 +2,11 @@ TFGEN    = pulumi-tfgen-ripe-atlas
 PROVIDER = pulumi-resource-ripe-atlas
 BINDIR   = bin
 
+# Disable workspace mode: this module uses replace directives in go.mod to
+# reference ../atlasctl and ../terraform-provider-ripe-atlas locally. The
+# go.work in this directory is for those sibling repos, not this module.
+# export GOWORK = off
+
 .PHONY: build generate install clean
 
 build:

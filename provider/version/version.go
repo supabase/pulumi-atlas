@@ -1,5 +1,5 @@
 package version
 
 // Version is set at build time via -ldflags by GoReleaser.
-// It is the empty string in local dev builds.
-var Version string
+// Defaults to 0.0.1 for local dev builds.
+var Version = "0.0.1"
