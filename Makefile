@@ -2,12 +2,7 @@ TFGEN    = pulumi-tfgen-ripe-atlas
 PROVIDER = pulumi-resource-ripe-atlas
 BINDIR   = bin
 
-# Disable workspace mode: this module uses replace directives in go.mod to
-# reference ../atlasctl and ../terraform-provider-ripe-atlas locally. The
-# go.work in this directory is for those sibling repos, not this module.
-# export GOWORK = off
-
-.PHONY: build generate install clean
+.PHONY: build generate install clean sync-sdk
 
 build:
 	go build -o $(BINDIR)/$(TFGEN)    ./provider/cmd/$(TFGEN)
@@ -21,6 +16,16 @@ generate: $(BINDIR)/$(TFGEN)
 
 $(BINDIR)/$(TFGEN):
 	go build -o $(BINDIR)/$(TFGEN) ./provider/cmd/$(TFGEN)
+
+PLATFORM_PULUMI ?= ../platform/pulumi
+
+sync-sdk: generate
+	rsync -a --delete \
+		--exclude=node_modules \
+		--exclude=package-lock.json \
+		sdk/nodejs/ $(PLATFORM_PULUMI)/ripe-atlas-sdk/
+	sed -i '' 's/"version": "[^"]*"/"version": "0.0.1"/' \
+		$(PLATFORM_PULUMI)/ripe-atlas-sdk/package.json
 
 install: build
 	mkdir -p "$(HOME)/.pulumi/plugins/resource-ripe-atlas-v0.0.1"

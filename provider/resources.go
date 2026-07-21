@@ -3,10 +3,10 @@ package provider
 import (
 	_ "embed"
 
-	pf  "github.com/pulumi/pulumi-terraform-bridge/v3/pkg/pf/tfbridge"
+	pf "github.com/pulumi/pulumi-terraform-bridge/v3/pkg/pf/tfbridge"
 	"github.com/pulumi/pulumi-terraform-bridge/v3/pkg/tfbridge"
-	tfp "github.com/supabase/terraform-provider-ripe-atlas/provider"
 	"github.com/supabase/pulumi-atlas/provider/version"
+	tfp "github.com/supabase/terraform-provider-ripe-atlas/provider"
 )
 
 //go:embed cmd/pulumi-resource-ripe-atlas/bridge-metadata.json
@@ -25,6 +25,9 @@ func Provider() tfbridge.ProviderInfo {
 		Golang: &tfbridge.GolangInfo{
 			ImportBasePath: "github.com/supabase/pulumi-atlas/sdk/go/ripeatlas",
 			ModulePath:     "github.com/supabase/pulumi-atlas/sdk/go/ripeatlas",
+		},
+		JavaScript: &tfbridge.JavaScriptInfo{
+			PackageName: "@supabase/ripe-atlas",
 		},
 		Resources: map[string]*tfbridge.ResourceInfo{
 			"ripeatlas_measurement": {
