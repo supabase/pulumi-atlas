@@ -1,0 +1,11 @@
+go 1.26.2
+
+use (
+	.
+	../atlasctl
+	../terraform-provider-ripe-atlas
+)
+
+replace github.com/supabase/atlasctl v0.1.2 => ../atlasctl
+
+replace github.com/supabase/terraform-provider-ripe-atlas v0.1.2 => ../terraform-provider-ripe-atlas

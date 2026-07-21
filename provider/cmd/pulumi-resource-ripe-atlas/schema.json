@@ -7,6 +7,11 @@
         "moduleFormat": "(.*)(?:/[^/]*)"
     },
     "language": {
+        "go": {
+            "importBasePath": "github.com/supabase/pulumi-atlas/sdk/go/ripeatlas",
+            "modulePath": "github.com/supabase/pulumi-atlas/sdk/go/ripeatlas",
+            "generateExtraInputTypes": true
+        },
         "nodejs": {
             "readme": "\u003e This provider is a derived work of the [Terraform Provider](https://github.com/supabase/terraform-provider-ripe-atlas)\n\u003e distributed under [MPL 2.0](https://www.mozilla.org/en-US/MPL/2.0/). If you encounter a bug or missing feature,\n\u003e please consult the source [`terraform-provider-ripe-atlas` repo](https://github.com/supabase/terraform-provider-ripe-atlas/issues).",
             "compatibility": "tfbridge20",
@@ -23,7 +28,113 @@
             "apiKey": {
                 "type": "string",
                 "secret": true
+            },
+            "snapshot": {
+                "type": "string",
+                "description": "Path to the probe snapshot JSON file. Falls back to RIPE_ATLAS_SNAPSHOT env var."
             }
+        }
+    },
+    "types": {
+        "ripe-atlas:index/MeasurementCohort:MeasurementCohort": {
+            "properties": {
+                "cfg": {
+                    "$ref": "#/types/ripe-atlas:index/MeasurementCohortCfg:MeasurementCohortCfg"
+                },
+                "excludeProbeIds": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    },
+                    "description": "Set of probe IDs never selected in this cohort.\n"
+                },
+                "includeProbeIds": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    },
+                    "description": "Set of probe IDs always included in the cohort, regardless of scoring or the H3 cell cap.\n"
+                },
+                "intervalSeconds": {
+                    "type": "integer",
+                    "description": "Measurement interval in seconds. Minimum \u003cspan pulumi-lang-nodejs=\"`60`\" pulumi-lang-dotnet=\"`60`\" pulumi-lang-go=\"`60`\" pulumi-lang-python=\"`60`\" pulumi-lang-yaml=\"`60`\" pulumi-lang-java=\"`60`\" pulumi-lang-hcl=\"`60`\"\u003e`60`\u003c/span\u003e.\n"
+                },
+                "maxProbesPerCell": {
+                    "type": "integer",
+                    "description": "Maximum probes per H3 geographic cell.\n"
+                },
+                "msmId": {
+                    "type": "integer",
+                    "description": "RIPE Atlas measurement ID assigned to this cohort.\n"
+                },
+                "name": {
+                    "type": "string",
+                    "description": "Cohort tier name, for example `high-freq`.\n"
+                },
+                "probeCount": {
+                    "type": "integer",
+                    "description": "Number of probes to select.\n"
+                },
+                "probeIds": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    },
+                    "description": "Probe IDs selected for this cohort.\n"
+                }
+            },
+            "type": "object",
+            "required": [
+                "intervalSeconds",
+                "maxProbesPerCell",
+                "name",
+                "probeCount"
+            ],
+            "language": {
+                "nodejs": {
+                    "requiredOutputs": [
+                        "intervalSeconds",
+                        "maxProbesPerCell",
+                        "msmId",
+                        "name",
+                        "probeCount",
+                        "probeIds"
+                    ]
+                }
+            }
+        },
+        "ripe-atlas:index/MeasurementCohortCfg:MeasurementCohortCfg": {
+            "properties": {
+                "asn": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "integer"
+                    },
+                    "description": "Map of ASN (string key) to score bonus.\n"
+                },
+                "countries": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "integer"
+                    },
+                    "description": "Map of ISO 3166-1 alpha-2 country code to score bonus.\n"
+                },
+                "stability": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "integer"
+                    },
+                    "description": "Map of RIPE Atlas stability tag to score bonus.\n"
+                },
+                "tags": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "integer"
+                    },
+                    "description": "Map of probe tag string to score bonus.\n"
+                }
+            },
+            "type": "object"
         }
     },
     "provider": {
@@ -32,12 +143,20 @@
             "apiKey": {
                 "type": "string",
                 "secret": true
+            },
+            "snapshot": {
+                "type": "string",
+                "description": "Path to the probe snapshot JSON file. Falls back to RIPE_ATLAS_SNAPSHOT env var."
             }
         },
         "inputProperties": {
             "apiKey": {
                 "type": "string",
                 "secret": true
+            },
+            "snapshot": {
+                "type": "string",
+                "description": "Path to the probe snapshot JSON file. Falls back to RIPE_ATLAS_SNAPSHOT env var."
             }
         },
         "methods": {
@@ -46,132 +165,101 @@
     },
     "resources": {
         "ripe-atlas:index/measurement:Measurement": {
-            "description": "Creates and manages a single RIPE Atlas measurement. Each resource maps to one `(name, cohort)` pair and one measurement ID on the RIPE Atlas platform.\n\nStructural attributes (\u003cspan pulumi-lang-nodejs=\"`name`\" pulumi-lang-dotnet=\"`Name`\" pulumi-lang-go=\"`name`\" pulumi-lang-python=\"`name`\" pulumi-lang-yaml=\"`name`\" pulumi-lang-java=\"`name`\" pulumi-lang-hcl=\"`name`\"\u003e`name`\u003c/span\u003e, \u003cspan pulumi-lang-nodejs=\"`cohort`\" pulumi-lang-dotnet=\"`Cohort`\" pulumi-lang-go=\"`cohort`\" pulumi-lang-python=\"`cohort`\" pulumi-lang-yaml=\"`cohort`\" pulumi-lang-java=\"`cohort`\" pulumi-lang-hcl=\"`cohort`\"\u003e`cohort`\u003c/span\u003e, \u003cspan pulumi-lang-nodejs=\"`target`\" pulumi-lang-dotnet=\"`Target`\" pulumi-lang-go=\"`target`\" pulumi-lang-python=\"`target`\" pulumi-lang-yaml=\"`target`\" pulumi-lang-java=\"`target`\" pulumi-lang-hcl=\"`target`\"\u003e`target`\u003c/span\u003e, \u003cspan pulumi-lang-nodejs=\"`msmType`\" pulumi-lang-dotnet=\"`MsmType`\" pulumi-lang-go=\"`msmType`\" pulumi-lang-python=\"`msm_type`\" pulumi-lang-yaml=\"`msmType`\" pulumi-lang-java=\"`msmType`\" pulumi-lang-hcl=\"`msm_type`\"\u003e`msmType`\u003c/span\u003e, \u003cspan pulumi-lang-nodejs=\"`af`\" pulumi-lang-dotnet=\"`Af`\" pulumi-lang-go=\"`af`\" pulumi-lang-python=\"`af`\" pulumi-lang-yaml=\"`af`\" pulumi-lang-java=\"`af`\" pulumi-lang-hcl=\"`af`\"\u003e`af`\u003c/span\u003e, \u003cspan pulumi-lang-nodejs=\"`intervalSeconds`\" pulumi-lang-dotnet=\"`IntervalSeconds`\" pulumi-lang-go=\"`intervalSeconds`\" pulumi-lang-python=\"`interval_seconds`\" pulumi-lang-yaml=\"`intervalSeconds`\" pulumi-lang-java=\"`intervalSeconds`\" pulumi-lang-hcl=\"`interval_seconds`\"\u003e`intervalSeconds`\u003c/span\u003e) are immutable. Changing any of them destroys the old measurement and creates a new one. \u003cspan pulumi-lang-nodejs=\"`probeIds`\" pulumi-lang-dotnet=\"`ProbeIds`\" pulumi-lang-go=\"`probeIds`\" pulumi-lang-python=\"`probe_ids`\" pulumi-lang-yaml=\"`probeIds`\" pulumi-lang-java=\"`probeIds`\" pulumi-lang-hcl=\"`probe_ids`\"\u003e`probeIds`\u003c/span\u003e is mutable in place: changing the set adds or removes probe participants on the running measurement without recreating it.\n\n",
+            "description": "Creates and manages one or more RIPE Atlas measurements under a single resource. Each cohort in the \u003cspan pulumi-lang-nodejs=\"`cohorts`\" pulumi-lang-dotnet=\"`Cohorts`\" pulumi-lang-go=\"`cohorts`\" pulumi-lang-python=\"`cohorts`\" pulumi-lang-yaml=\"`cohorts`\" pulumi-lang-java=\"`cohorts`\" pulumi-lang-hcl=\"`cohorts`\"\u003e`cohorts`\u003c/span\u003e list corresponds to exactly one RIPE Atlas measurement ID.\n\nProbe selection runs locally during `pulumi preview`. All cohorts are passed to the selection algorithm in a single call. Probes selected for cohort N are excluded from cohort N+1, so successive cohorts draw from a diminishing pool. Cohort ordering in the list determines selection priority.\n\nImmutable attributes (\u003cspan pulumi-lang-nodejs=\"`name`\" pulumi-lang-dotnet=\"`Name`\" pulumi-lang-go=\"`name`\" pulumi-lang-python=\"`name`\" pulumi-lang-yaml=\"`name`\" pulumi-lang-java=\"`name`\" pulumi-lang-hcl=\"`name`\"\u003e`name`\u003c/span\u003e, \u003cspan pulumi-lang-nodejs=\"`target`\" pulumi-lang-dotnet=\"`Target`\" pulumi-lang-go=\"`target`\" pulumi-lang-python=\"`target`\" pulumi-lang-yaml=\"`target`\" pulumi-lang-java=\"`target`\" pulumi-lang-hcl=\"`target`\"\u003e`target`\u003c/span\u003e, \u003cspan pulumi-lang-nodejs=\"`msmType`\" pulumi-lang-dotnet=\"`MsmType`\" pulumi-lang-go=\"`msmType`\" pulumi-lang-python=\"`msm_type`\" pulumi-lang-yaml=\"`msmType`\" pulumi-lang-java=\"`msmType`\" pulumi-lang-hcl=\"`msm_type`\"\u003e`msmType`\u003c/span\u003e, \u003cspan pulumi-lang-nodejs=\"`af`\" pulumi-lang-dotnet=\"`Af`\" pulumi-lang-go=\"`af`\" pulumi-lang-python=\"`af`\" pulumi-lang-yaml=\"`af`\" pulumi-lang-java=\"`af`\" pulumi-lang-hcl=\"`af`\"\u003e`af`\u003c/span\u003e, and all cohort structural fields) trigger replacement of the affected measurement when changed. Adding or removing a cohort creates or stops only that cohort's measurement without affecting others. Changes to \u003cspan pulumi-lang-nodejs=\"`excludeTags`\" pulumi-lang-dotnet=\"`ExcludeTags`\" pulumi-lang-go=\"`excludeTags`\" pulumi-lang-python=\"`exclude_tags`\" pulumi-lang-yaml=\"`excludeTags`\" pulumi-lang-java=\"`excludeTags`\" pulumi-lang-hcl=\"`exclude_tags`\"\u003e`excludeTags`\u003c/span\u003e or cohort scoring fields re-run probe selection on the next plan; the resulting diff drives `AddParticipants` or `RemoveParticipants` on the running measurement without recreating it.\n\n## Example Usage\n\n\u003c!--Start PulumiCodeChooser --\u003e\n```typescript\nimport * as pulumi from \"@pulumi/pulumi\";\nimport * as ripe_atlas from \"@pulumi/ripe-atlas\";\n\nconst dnsCanary = new ripe_atlas.Measurement(\"dns_canary\", {\n    name: \"dns-canary\",\n    target: \"canary.example.com\",\n    msmType: \"dns\",\n    af: 4,\n    excludeTags: [\n        \"broken\",\n        \"system-flakey-connection\",\n    ],\n    cohorts: [\n        {\n            name: \"high-freq\",\n            probeCount: 30,\n            maxProbesPerCell: 1,\n            intervalSeconds: 60,\n            includeProbeIds: [1001],\n            excludeProbeIds: [9999],\n            cfg: {\n                asn: {\n                    \"7018\": 10,\n                    \"7922\": 8,\n                },\n                tags: {\n                    office: 5,\n                    fibre: 2,\n                },\n                stability: {\n                    \"system-ipv4-stable-90d\": 5,\n                },\n            },\n        },\n        {\n            name: \"low-freq\",\n            probeCount: 100,\n            maxProbesPerCell: 2,\n            intervalSeconds: 3600,\n        },\n    ],\n});\nexport const msmIds = dnsCanary.cohorts.apply(cohorts =\u003e cohorts.map(c =\u003e (c.msmId)));\nexport const probeIds = dnsCanary.cohorts.apply(cohorts =\u003e cohorts.map(c =\u003e (c.probeIds)));\n```\n```python\nimport pulumi\nimport pulumi_ripe_atlas as ripe_atlas\n\ndns_canary = ripe_atlas.Measurement(\"dns_canary\",\n    name=\"dns-canary\",\n    target=\"canary.example.com\",\n    msm_type=\"dns\",\n    af=4,\n    exclude_tags=[\n        \"broken\",\n        \"system-flakey-connection\",\n    ],\n    cohorts=[\n        {\n            \"name\": \"high-freq\",\n            \"probe_count\": 30,\n            \"max_probes_per_cell\": 1,\n            \"interval_seconds\": 60,\n            \"include_probe_ids\": [1001],\n            \"exclude_probe_ids\": [9999],\n            \"cfg\": {\n                \"asn\": {\n                    \"7018\": 10,\n                    \"7922\": 8,\n                },\n                \"tags\": {\n                    \"office\": 5,\n                    \"fibre\": 2,\n                },\n                \"stability\": {\n                    \"system-ipv4-stable-90d\": 5,\n                },\n            },\n        },\n        {\n            \"name\": \"low-freq\",\n            \"probe_count\": 100,\n            \"max_probes_per_cell\": 2,\n            \"interval_seconds\": 3600,\n        },\n    ])\npulumi.export(\"msmIds\", dns_canary.cohorts.apply(lambda cohorts: [c.msm_id for c in cohorts]))\npulumi.export(\"probeIds\", dns_canary.cohorts.apply(lambda cohorts: [c.probe_ids for c in cohorts]))\n```\n```csharp\nusing System.Collections.Generic;\nusing System.Linq;\nusing Pulumi;\nusing RipeAtlas = Pulumi.RipeAtlas;\n\nreturn await Deployment.RunAsync(() =\u003e \n{\n    var dnsCanary = new RipeAtlas.Measurement(\"dns_canary\", new()\n    {\n        Name = \"dns-canary\",\n        Target = \"canary.example.com\",\n        MsmType = \"dns\",\n        Af = 4,\n        ExcludeTags = new[]\n        {\n            \"broken\",\n            \"system-flakey-connection\",\n        },\n        Cohorts = new[]\n        {\n            new RipeAtlas.Inputs.MeasurementCohortArgs\n            {\n                Name = \"high-freq\",\n                ProbeCount = 30,\n                MaxProbesPerCell = 1,\n                IntervalSeconds = 60,\n                IncludeProbeIds = new[]\n                {\n                    1001,\n                },\n                ExcludeProbeIds = new[]\n                {\n                    9999,\n                },\n                Cfg = new RipeAtlas.Inputs.MeasurementCohortCfgArgs\n                {\n                    Asn = \n                    {\n                        { \"7018\", 10 },\n                        { \"7922\", 8 },\n                    },\n                    Tags = \n                    {\n                        { \"office\", 5 },\n                        { \"fibre\", 2 },\n                    },\n                    Stability = \n                    {\n                        { \"system-ipv4-stable-90d\", 5 },\n                    },\n                },\n            },\n            new RipeAtlas.Inputs.MeasurementCohortArgs\n            {\n                Name = \"low-freq\",\n                ProbeCount = 100,\n                MaxProbesPerCell = 2,\n                IntervalSeconds = 3600,\n            },\n        },\n    });\n\n    return new Dictionary\u003cstring, object?\u003e\n    {\n        [\"msmIds\"] = dnsCanary.Cohorts.Apply(cohorts =\u003e cohorts.Select(c =\u003e \n        {\n            return c.MsmId;\n        }).ToList()),\n        [\"probeIds\"] = dnsCanary.Cohorts.Apply(cohorts =\u003e cohorts.Select(c =\u003e \n        {\n            return c.ProbeIds;\n        }).ToList()),\n    };\n});\n```\n```hcl\npulumi {\n  required_providers {\n    ripe-atlas = {\n      source = \"pulumi/ripe-atlas\"\n    }\n  }\n}\n\nresource \"ripe-atlas_measurement\" \"dns_canary\" {\n  name         = \"dns-canary\"\n  target       = \"canary.example.com\"\n  msm_type     = \"dns\"\n  af           = 4\n  exclude_tags = [\"broken\", \"system-flakey-connection\"]\n  cohorts {\n    name                = \"high-freq\"\n    probe_count         = 30\n    max_probes_per_cell = 1\n    interval_seconds    = 60\n    include_probe_ids   = [1001]\n    exclude_probe_ids   = [9999]\n    cfg = {\n      asn = {\n        \"7018\" = 10\n        \"7922\" = 8\n      }\n      tags = {\n        \"office\" = 5\n        \"fibre\"  = 2\n      }\n      stability = {\n        \"system-ipv4-stable-90d\" = 5\n      }\n    }\n  }\n  cohorts {\n    name                = \"low-freq\"\n    probe_count         = 100\n    max_probes_per_cell = 2\n    interval_seconds    = 3600\n  }\n}\noutput \"msmIds\" {\n  value = [for c in ripe-atlas_measurement.dns_canary.cohorts : c.msmId]\n}\noutput \"probeIds\" {\n  value = [for c in ripe-atlas_measurement.dns_canary.cohorts : c.probeIds]\n}\n```\n\u003c!--End PulumiCodeChooser --\u003e\n\n## Credit Costs\n\nCredits are consumed per result per measurement cycle. Approximate costs:\n\n| Type | Credits per result |\n|------|-------------------|\n| \u003cspan pulumi-lang-nodejs=\"`dns`\" pulumi-lang-dotnet=\"`Dns`\" pulumi-lang-go=\"`dns`\" pulumi-lang-python=\"`dns`\" pulumi-lang-yaml=\"`dns`\" pulumi-lang-java=\"`dns`\" pulumi-lang-hcl=\"`dns`\"\u003e`dns`\u003c/span\u003e | 10 |\n| \u003cspan pulumi-lang-nodejs=\"`tls`\" pulumi-lang-dotnet=\"`Tls`\" pulumi-lang-go=\"`tls`\" pulumi-lang-python=\"`tls`\" pulumi-lang-yaml=\"`tls`\" pulumi-lang-java=\"`tls`\" pulumi-lang-hcl=\"`tls`\"\u003e`tls`\u003c/span\u003e | 10 |\n| \u003cspan pulumi-lang-nodejs=\"`ping`\" pulumi-lang-dotnet=\"`Ping`\" pulumi-lang-go=\"`ping`\" pulumi-lang-python=\"`ping`\" pulumi-lang-yaml=\"`ping`\" pulumi-lang-java=\"`ping`\" pulumi-lang-hcl=\"`ping`\"\u003e`ping`\u003c/span\u003e | 3 |\n| \u003cspan pulumi-lang-nodejs=\"`traceroute`\" pulumi-lang-dotnet=\"`Traceroute`\" pulumi-lang-go=\"`traceroute`\" pulumi-lang-python=\"`traceroute`\" pulumi-lang-yaml=\"`traceroute`\" pulumi-lang-java=\"`traceroute`\" pulumi-lang-hcl=\"`traceroute`\"\u003e`traceroute`\u003c/span\u003e | 30 |\n\nTotal hourly cost is `(3600 / interval_seconds) *\u003cspan pulumi-lang-nodejs=\" creditsPerResult \" pulumi-lang-dotnet=\" CreditsPerResult \" pulumi-lang-go=\" creditsPerResult \" pulumi-lang-python=\" credits_per_result \" pulumi-lang-yaml=\" creditsPerResult \" pulumi-lang-java=\" creditsPerResult \" pulumi-lang-hcl=\" credits_per_result \"\u003e creditsPerResult \u003c/span\u003e* len(probe_ids)` per cohort.\n",
             "properties": {
                 "af": {
-                    "type": "integer",
-                    "description": "Address family. \u003cspan pulumi-lang-nodejs=\"`4`\" pulumi-lang-dotnet=\"`4`\" pulumi-lang-go=\"`4`\" pulumi-lang-python=\"`4`\" pulumi-lang-yaml=\"`4`\" pulumi-lang-java=\"`4`\" pulumi-lang-hcl=\"`4`\"\u003e`4`\u003c/span\u003e for IPv4, \u003cspan pulumi-lang-nodejs=\"`6`\" pulumi-lang-dotnet=\"`6`\" pulumi-lang-go=\"`6`\" pulumi-lang-python=\"`6`\" pulumi-lang-yaml=\"`6`\" pulumi-lang-java=\"`6`\" pulumi-lang-hcl=\"`6`\"\u003e`6`\u003c/span\u003e for IPv6. Defaults to \u003cspan pulumi-lang-nodejs=\"`4`\" pulumi-lang-dotnet=\"`4`\" pulumi-lang-go=\"`4`\" pulumi-lang-python=\"`4`\" pulumi-lang-yaml=\"`4`\" pulumi-lang-java=\"`4`\" pulumi-lang-hcl=\"`4`\"\u003e`4`\u003c/span\u003e.\n"
+                    "type": "integer"
                 },
-                "cohort": {
-                    "type": "string",
-                    "description": "Probe group name, for example `high-freq`. Must match a cohort name defined in `atlasctl.yaml` when probe IDs come from the \u003cspan pulumi-lang-nodejs=\"`ripe-atlas.getProbeSelection`\" pulumi-lang-dotnet=\"`ripe-atlas.getProbeSelection`\" pulumi-lang-go=\"`getProbeSelection`\" pulumi-lang-python=\"`get_probe_selection`\" pulumi-lang-yaml=\"`ripe-atlas.getProbeSelection`\" pulumi-lang-java=\"`ripe-atlas.getProbeSelection`\" pulumi-lang-hcl=\"`data.ripeatlas_probe_selection`\"\u003e`ripe-atlas.getProbeSelection`\u003c/span\u003e data source.\n"
-                },
-                "intervalSeconds": {
-                    "type": "integer",
-                    "description": "Measurement interval in seconds. Minimum value is \u003cspan pulumi-lang-nodejs=\"`60`\" pulumi-lang-dotnet=\"`60`\" pulumi-lang-go=\"`60`\" pulumi-lang-python=\"`60`\" pulumi-lang-yaml=\"`60`\" pulumi-lang-java=\"`60`\" pulumi-lang-hcl=\"`60`\"\u003e`60`\u003c/span\u003e. All measurements created by this provider are periodic.\n"
-                },
-                "msmId": {
-                    "type": "integer",
-                    "description": "The RIPE Atlas measurement ID assigned at creation. Stable for the lifetime of the resource.\n"
-                },
-                "msmType": {
-                    "type": "string",
-                    "description": "Measurement type. One of \u003cspan pulumi-lang-nodejs=\"`dns`\" pulumi-lang-dotnet=\"`Dns`\" pulumi-lang-go=\"`dns`\" pulumi-lang-python=\"`dns`\" pulumi-lang-yaml=\"`dns`\" pulumi-lang-java=\"`dns`\" pulumi-lang-hcl=\"`dns`\"\u003e`dns`\u003c/span\u003e, \u003cspan pulumi-lang-nodejs=\"`ping`\" pulumi-lang-dotnet=\"`Ping`\" pulumi-lang-go=\"`ping`\" pulumi-lang-python=\"`ping`\" pulumi-lang-yaml=\"`ping`\" pulumi-lang-java=\"`ping`\" pulumi-lang-hcl=\"`ping`\"\u003e`ping`\u003c/span\u003e, \u003cspan pulumi-lang-nodejs=\"`tls`\" pulumi-lang-dotnet=\"`Tls`\" pulumi-lang-go=\"`tls`\" pulumi-lang-python=\"`tls`\" pulumi-lang-yaml=\"`tls`\" pulumi-lang-java=\"`tls`\" pulumi-lang-hcl=\"`tls`\"\u003e`tls`\u003c/span\u003e, or \u003cspan pulumi-lang-nodejs=\"`traceroute`\" pulumi-lang-dotnet=\"`Traceroute`\" pulumi-lang-go=\"`traceroute`\" pulumi-lang-python=\"`traceroute`\" pulumi-lang-yaml=\"`traceroute`\" pulumi-lang-java=\"`traceroute`\" pulumi-lang-hcl=\"`traceroute`\"\u003e`traceroute`\u003c/span\u003e.\n"
-                },
-                "name": {
-                    "type": "string",
-                    "description": "Logical measurement name, for example `dns-canary`. Used together with \u003cspan pulumi-lang-nodejs=\"`cohort`\" pulumi-lang-dotnet=\"`Cohort`\" pulumi-lang-go=\"`cohort`\" pulumi-lang-python=\"`cohort`\" pulumi-lang-yaml=\"`cohort`\" pulumi-lang-java=\"`cohort`\" pulumi-lang-hcl=\"`cohort`\"\u003e`cohort`\u003c/span\u003e to identify the measurement within atlasctl state.\n"
-                },
-                "probeIds": {
+                "cohorts": {
                     "type": "array",
                     "items": {
-                        "type": "integer"
+                        "$ref": "#/types/ripe-atlas:index/MeasurementCohort:MeasurementCohort"
                     },
-                    "description": "Set of RIPE Atlas probe IDs to include in the measurement. This attribute is mutable: adding or removing probe IDs calls `AddParticipants` or `RemoveParticipants` on the running measurement rather than recreating it.\n"
+                    "description": "Ordered list of cohorts. Each creates one RIPE Atlas measurement. Selection runs in order; each cohort draws from the remaining probe pool after prior cohorts have claimed their probes."
+                },
+                "excludeTags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "msmType": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
                 },
                 "target": {
-                    "type": "string",
-                    "description": "The measurement target. A DNS name or IP address depending on \u003cspan pulumi-lang-nodejs=\"`msmType`\" pulumi-lang-dotnet=\"`MsmType`\" pulumi-lang-go=\"`msmType`\" pulumi-lang-python=\"`msm_type`\" pulumi-lang-yaml=\"`msmType`\" pulumi-lang-java=\"`msmType`\" pulumi-lang-hcl=\"`msm_type`\"\u003e`msmType`\u003c/span\u003e.\n"
+                    "type": "string"
                 }
             },
             "required": [
                 "af",
-                "cohort",
-                "intervalSeconds",
-                "msmId",
+                "cohorts",
                 "msmType",
                 "name",
-                "probeIds",
                 "target"
             ],
             "inputProperties": {
                 "af": {
-                    "type": "integer",
-                    "description": "Address family. \u003cspan pulumi-lang-nodejs=\"`4`\" pulumi-lang-dotnet=\"`4`\" pulumi-lang-go=\"`4`\" pulumi-lang-python=\"`4`\" pulumi-lang-yaml=\"`4`\" pulumi-lang-java=\"`4`\" pulumi-lang-hcl=\"`4`\"\u003e`4`\u003c/span\u003e for IPv4, \u003cspan pulumi-lang-nodejs=\"`6`\" pulumi-lang-dotnet=\"`6`\" pulumi-lang-go=\"`6`\" pulumi-lang-python=\"`6`\" pulumi-lang-yaml=\"`6`\" pulumi-lang-java=\"`6`\" pulumi-lang-hcl=\"`6`\"\u003e`6`\u003c/span\u003e for IPv6. Defaults to \u003cspan pulumi-lang-nodejs=\"`4`\" pulumi-lang-dotnet=\"`4`\" pulumi-lang-go=\"`4`\" pulumi-lang-python=\"`4`\" pulumi-lang-yaml=\"`4`\" pulumi-lang-java=\"`4`\" pulumi-lang-hcl=\"`4`\"\u003e`4`\u003c/span\u003e.\n"
+                    "type": "integer"
                 },
-                "cohort": {
-                    "type": "string",
-                    "description": "Probe group name, for example `high-freq`. Must match a cohort name defined in `atlasctl.yaml` when probe IDs come from the \u003cspan pulumi-lang-nodejs=\"`ripe-atlas.getProbeSelection`\" pulumi-lang-dotnet=\"`ripe-atlas.getProbeSelection`\" pulumi-lang-go=\"`getProbeSelection`\" pulumi-lang-python=\"`get_probe_selection`\" pulumi-lang-yaml=\"`ripe-atlas.getProbeSelection`\" pulumi-lang-java=\"`ripe-atlas.getProbeSelection`\" pulumi-lang-hcl=\"`data.ripeatlas_probe_selection`\"\u003e`ripe-atlas.getProbeSelection`\u003c/span\u003e data source.\n"
-                },
-                "intervalSeconds": {
-                    "type": "integer",
-                    "description": "Measurement interval in seconds. Minimum value is \u003cspan pulumi-lang-nodejs=\"`60`\" pulumi-lang-dotnet=\"`60`\" pulumi-lang-go=\"`60`\" pulumi-lang-python=\"`60`\" pulumi-lang-yaml=\"`60`\" pulumi-lang-java=\"`60`\" pulumi-lang-hcl=\"`60`\"\u003e`60`\u003c/span\u003e. All measurements created by this provider are periodic.\n"
-                },
-                "msmType": {
-                    "type": "string",
-                    "description": "Measurement type. One of \u003cspan pulumi-lang-nodejs=\"`dns`\" pulumi-lang-dotnet=\"`Dns`\" pulumi-lang-go=\"`dns`\" pulumi-lang-python=\"`dns`\" pulumi-lang-yaml=\"`dns`\" pulumi-lang-java=\"`dns`\" pulumi-lang-hcl=\"`dns`\"\u003e`dns`\u003c/span\u003e, \u003cspan pulumi-lang-nodejs=\"`ping`\" pulumi-lang-dotnet=\"`Ping`\" pulumi-lang-go=\"`ping`\" pulumi-lang-python=\"`ping`\" pulumi-lang-yaml=\"`ping`\" pulumi-lang-java=\"`ping`\" pulumi-lang-hcl=\"`ping`\"\u003e`ping`\u003c/span\u003e, \u003cspan pulumi-lang-nodejs=\"`tls`\" pulumi-lang-dotnet=\"`Tls`\" pulumi-lang-go=\"`tls`\" pulumi-lang-python=\"`tls`\" pulumi-lang-yaml=\"`tls`\" pulumi-lang-java=\"`tls`\" pulumi-lang-hcl=\"`tls`\"\u003e`tls`\u003c/span\u003e, or \u003cspan pulumi-lang-nodejs=\"`traceroute`\" pulumi-lang-dotnet=\"`Traceroute`\" pulumi-lang-go=\"`traceroute`\" pulumi-lang-python=\"`traceroute`\" pulumi-lang-yaml=\"`traceroute`\" pulumi-lang-java=\"`traceroute`\" pulumi-lang-hcl=\"`traceroute`\"\u003e`traceroute`\u003c/span\u003e.\n"
-                },
-                "name": {
-                    "type": "string",
-                    "description": "Logical measurement name, for example `dns-canary`. Used together with \u003cspan pulumi-lang-nodejs=\"`cohort`\" pulumi-lang-dotnet=\"`Cohort`\" pulumi-lang-go=\"`cohort`\" pulumi-lang-python=\"`cohort`\" pulumi-lang-yaml=\"`cohort`\" pulumi-lang-java=\"`cohort`\" pulumi-lang-hcl=\"`cohort`\"\u003e`cohort`\u003c/span\u003e to identify the measurement within atlasctl state.\n"
-                },
-                "probeIds": {
+                "cohorts": {
                     "type": "array",
                     "items": {
-                        "type": "integer"
+                        "$ref": "#/types/ripe-atlas:index/MeasurementCohort:MeasurementCohort"
                     },
-                    "description": "Set of RIPE Atlas probe IDs to include in the measurement. This attribute is mutable: adding or removing probe IDs calls `AddParticipants` or `RemoveParticipants` on the running measurement rather than recreating it.\n"
+                    "description": "Ordered list of cohorts. Each creates one RIPE Atlas measurement. Selection runs in order; each cohort draws from the remaining probe pool after prior cohorts have claimed their probes."
+                },
+                "excludeTags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "msmType": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
                 },
                 "target": {
-                    "type": "string",
-                    "description": "The measurement target. A DNS name or IP address depending on \u003cspan pulumi-lang-nodejs=\"`msmType`\" pulumi-lang-dotnet=\"`MsmType`\" pulumi-lang-go=\"`msmType`\" pulumi-lang-python=\"`msm_type`\" pulumi-lang-yaml=\"`msmType`\" pulumi-lang-java=\"`msmType`\" pulumi-lang-hcl=\"`msm_type`\"\u003e`msmType`\u003c/span\u003e.\n"
+                    "type": "string"
                 }
             },
             "requiredInputs": [
-                "cohort",
-                "intervalSeconds",
+                "cohorts",
                 "msmType",
                 "name",
-                "probeIds",
                 "target"
             ],
             "stateInputs": {
                 "description": "Input properties used for looking up and filtering Measurement resources.\n",
                 "properties": {
                     "af": {
-                        "type": "integer",
-                        "description": "Address family. \u003cspan pulumi-lang-nodejs=\"`4`\" pulumi-lang-dotnet=\"`4`\" pulumi-lang-go=\"`4`\" pulumi-lang-python=\"`4`\" pulumi-lang-yaml=\"`4`\" pulumi-lang-java=\"`4`\" pulumi-lang-hcl=\"`4`\"\u003e`4`\u003c/span\u003e for IPv4, \u003cspan pulumi-lang-nodejs=\"`6`\" pulumi-lang-dotnet=\"`6`\" pulumi-lang-go=\"`6`\" pulumi-lang-python=\"`6`\" pulumi-lang-yaml=\"`6`\" pulumi-lang-java=\"`6`\" pulumi-lang-hcl=\"`6`\"\u003e`6`\u003c/span\u003e for IPv6. Defaults to \u003cspan pulumi-lang-nodejs=\"`4`\" pulumi-lang-dotnet=\"`4`\" pulumi-lang-go=\"`4`\" pulumi-lang-python=\"`4`\" pulumi-lang-yaml=\"`4`\" pulumi-lang-java=\"`4`\" pulumi-lang-hcl=\"`4`\"\u003e`4`\u003c/span\u003e.\n"
+                        "type": "integer"
                     },
-                    "cohort": {
-                        "type": "string",
-                        "description": "Probe group name, for example `high-freq`. Must match a cohort name defined in `atlasctl.yaml` when probe IDs come from the \u003cspan pulumi-lang-nodejs=\"`ripe-atlas.getProbeSelection`\" pulumi-lang-dotnet=\"`ripe-atlas.getProbeSelection`\" pulumi-lang-go=\"`getProbeSelection`\" pulumi-lang-python=\"`get_probe_selection`\" pulumi-lang-yaml=\"`ripe-atlas.getProbeSelection`\" pulumi-lang-java=\"`ripe-atlas.getProbeSelection`\" pulumi-lang-hcl=\"`data.ripeatlas_probe_selection`\"\u003e`ripe-atlas.getProbeSelection`\u003c/span\u003e data source.\n"
-                    },
-                    "intervalSeconds": {
-                        "type": "integer",
-                        "description": "Measurement interval in seconds. Minimum value is \u003cspan pulumi-lang-nodejs=\"`60`\" pulumi-lang-dotnet=\"`60`\" pulumi-lang-go=\"`60`\" pulumi-lang-python=\"`60`\" pulumi-lang-yaml=\"`60`\" pulumi-lang-java=\"`60`\" pulumi-lang-hcl=\"`60`\"\u003e`60`\u003c/span\u003e. All measurements created by this provider are periodic.\n"
-                    },
-                    "msmId": {
-                        "type": "integer",
-                        "description": "The RIPE Atlas measurement ID assigned at creation. Stable for the lifetime of the resource.\n"
-                    },
-                    "msmType": {
-                        "type": "string",
-                        "description": "Measurement type. One of \u003cspan pulumi-lang-nodejs=\"`dns`\" pulumi-lang-dotnet=\"`Dns`\" pulumi-lang-go=\"`dns`\" pulumi-lang-python=\"`dns`\" pulumi-lang-yaml=\"`dns`\" pulumi-lang-java=\"`dns`\" pulumi-lang-hcl=\"`dns`\"\u003e`dns`\u003c/span\u003e, \u003cspan pulumi-lang-nodejs=\"`ping`\" pulumi-lang-dotnet=\"`Ping`\" pulumi-lang-go=\"`ping`\" pulumi-lang-python=\"`ping`\" pulumi-lang-yaml=\"`ping`\" pulumi-lang-java=\"`ping`\" pulumi-lang-hcl=\"`ping`\"\u003e`ping`\u003c/span\u003e, \u003cspan pulumi-lang-nodejs=\"`tls`\" pulumi-lang-dotnet=\"`Tls`\" pulumi-lang-go=\"`tls`\" pulumi-lang-python=\"`tls`\" pulumi-lang-yaml=\"`tls`\" pulumi-lang-java=\"`tls`\" pulumi-lang-hcl=\"`tls`\"\u003e`tls`\u003c/span\u003e, or \u003cspan pulumi-lang-nodejs=\"`traceroute`\" pulumi-lang-dotnet=\"`Traceroute`\" pulumi-lang-go=\"`traceroute`\" pulumi-lang-python=\"`traceroute`\" pulumi-lang-yaml=\"`traceroute`\" pulumi-lang-java=\"`traceroute`\" pulumi-lang-hcl=\"`traceroute`\"\u003e`traceroute`\u003c/span\u003e.\n"
-                    },
-                    "name": {
-                        "type": "string",
-                        "description": "Logical measurement name, for example `dns-canary`. Used together with \u003cspan pulumi-lang-nodejs=\"`cohort`\" pulumi-lang-dotnet=\"`Cohort`\" pulumi-lang-go=\"`cohort`\" pulumi-lang-python=\"`cohort`\" pulumi-lang-yaml=\"`cohort`\" pulumi-lang-java=\"`cohort`\" pulumi-lang-hcl=\"`cohort`\"\u003e`cohort`\u003c/span\u003e to identify the measurement within atlasctl state.\n"
-                    },
-                    "probeIds": {
+                    "cohorts": {
                         "type": "array",
                         "items": {
-                            "type": "integer"
+                            "$ref": "#/types/ripe-atlas:index/MeasurementCohort:MeasurementCohort"
                         },
-                        "description": "Set of RIPE Atlas probe IDs to include in the measurement. This attribute is mutable: adding or removing probe IDs calls `AddParticipants` or `RemoveParticipants` on the running measurement rather than recreating it.\n"
+                        "description": "Ordered list of cohorts. Each creates one RIPE Atlas measurement. Selection runs in order; each cohort draws from the remaining probe pool after prior cohorts have claimed their probes."
+                    },
+                    "excludeTags": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "msmType": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
                     },
                     "target": {
-                        "type": "string",
-                        "description": "The measurement target. A DNS name or IP address depending on \u003cspan pulumi-lang-nodejs=\"`msmType`\" pulumi-lang-dotnet=\"`MsmType`\" pulumi-lang-go=\"`msmType`\" pulumi-lang-python=\"`msm_type`\" pulumi-lang-yaml=\"`msmType`\" pulumi-lang-java=\"`msmType`\" pulumi-lang-hcl=\"`msm_type`\"\u003e`msmType`\u003c/span\u003e.\n"
+                        "type": "string"
                     }
                 },
                 "type": "object"
@@ -204,59 +292,6 @@
                 },
                 "required": [
                     "result"
-                ],
-                "type": "object"
-            }
-        },
-        "ripe-atlas:index/getProbeSelection:getProbeSelection": {
-            "description": "Runs the atlasctl probe selection algorithm during `pulumi preview` and exposes the results as probe ID sets keyed by cohort name. The sets can be passed directly to \u003cspan pulumi-lang-nodejs=\"`ripe-atlas.Measurement`\" pulumi-lang-dotnet=\"`ripe-atlas.Measurement`\" pulumi-lang-go=\"`Measurement`\" pulumi-lang-python=\"`Measurement`\" pulumi-lang-yaml=\"`ripe-atlas.Measurement`\" pulumi-lang-java=\"`ripe-atlas.Measurement`\" pulumi-lang-hcl=\"`ripeatlas_measurement`\"\u003e`ripe-atlas.Measurement`\u003c/span\u003e resources.\n\nSelection is holistic: all cohorts defined in the config file are assigned in a single pass and the resulting sets are non-overlapping. Run `atlasctl refresh` to update the snapshot before planning when you want to pick up changes in the probe pool.\n\n{{% examples %}}\n## Example Usage\n\n`atlasctl.yaml`:\n\n```yaml\ncohorts:\n  - name: high-freq\n    count: 30\n    max_probes_per_cell: 1\n  - name: low-freq\n    count: 100\n    max_probes_per_cell: 3\n\nscoring:\n  asn:\n    7018: 10   # AT\u0026T\n    7922: 8    # Comcast\n  tags:\n    office: 5\n    fibre: 2\n  stability:\n    system-ipv4-stable-90d: 5\n\nexclude_tags:\n  - broken\n  - system-flakey-connection\n```\n\n`main.tf`:\n\n```hcl\ndata \"ripeatlas_probe_selection\" \"selected\" {\n  snapshot = \"${path.module}/snapshot.json\"\n  config   = \"${path.module}/atlasctl.yaml\"\n}\n\nresource \"ripeatlas_measurement\" \"dns_canary_high\" {\n  name             = \"dns-canary\"\n  cohort           = \"high-freq\"\n  target           = \"canary.example.com\"\n  msm_type         = \"dns\"\n  interval_seconds = 60\n  probe_ids        = data.ripeatlas_probe_selection.selected.probe_ids[\"high-freq\"]\n}\n\nresource \"ripeatlas_measurement\" \"dns_canary_low\" {\n  name             = \"dns-canary\"\n  cohort           = \"low-freq\"\n  target           = \"canary.example.com\"\n  msm_type         = \"dns\"\n  interval_seconds = 900\n  probe_ids        = data.ripeatlas_probe_selection.selected.probe_ids[\"low-freq\"]\n}\n```\n\n## Refreshing the Snapshot\n\nThe data source reads probes from a local `snapshot.json` file. This file is managed outside Terraform using \u003cspan pulumi-lang-nodejs=\"`atlasctl`\" pulumi-lang-dotnet=\"`Atlasctl`\" pulumi-lang-go=\"`atlasctl`\" pulumi-lang-python=\"`atlasctl`\" pulumi-lang-yaml=\"`atlasctl`\" pulumi-lang-java=\"`atlasctl`\" pulumi-lang-hcl=\"`atlasctl`\"\u003e`atlasctl`\u003c/span\u003e:\n\n```bash\natlasctl refresh   # fetch connected probes from the RIPE Atlas API\npulumi preview     # selection runs here, probe IDs propagate to measurements\n```\n\nCommitting `snapshot.json` to version control gives reproducible probe selection until you explicitly refresh.\n\n## Selection Algorithm\n\nProbe selection uses scoring bands, continental interleaving, and H3-based geographic diversity to produce a globally distributed, stable cohort. Full details are in the [atlasctl probe selection documentation](https://github.com/supabase/atlasctl/blob/main/README.md#probe-selection).\n\n{{% /examples %}}",
-            "inputs": {
-                "description": "A collection of arguments for invoking getProbeSelection.\n",
-                "properties": {
-                    "config": {
-                        "type": "string",
-                        "description": "Path to an `atlasctl.yaml` configuration file. The \u003cspan pulumi-lang-nodejs=\"`cohorts`\" pulumi-lang-dotnet=\"`Cohorts`\" pulumi-lang-go=\"`cohorts`\" pulumi-lang-python=\"`cohorts`\" pulumi-lang-yaml=\"`cohorts`\" pulumi-lang-java=\"`cohorts`\" pulumi-lang-hcl=\"`cohorts`\"\u003e`cohorts`\u003c/span\u003e, \u003cspan pulumi-lang-nodejs=\"`scoring`\" pulumi-lang-dotnet=\"`Scoring`\" pulumi-lang-go=\"`scoring`\" pulumi-lang-python=\"`scoring`\" pulumi-lang-yaml=\"`scoring`\" pulumi-lang-java=\"`scoring`\" pulumi-lang-hcl=\"`scoring`\"\u003e`scoring`\u003c/span\u003e, and \u003cspan pulumi-lang-nodejs=\"`excludeTags`\" pulumi-lang-dotnet=\"`ExcludeTags`\" pulumi-lang-go=\"`excludeTags`\" pulumi-lang-python=\"`exclude_tags`\" pulumi-lang-yaml=\"`excludeTags`\" pulumi-lang-java=\"`excludeTags`\" pulumi-lang-hcl=\"`exclude_tags`\"\u003e`excludeTags`\u003c/span\u003e stanzas are used. Any \u003cspan pulumi-lang-nodejs=\"`measurements`\" pulumi-lang-dotnet=\"`Measurements`\" pulumi-lang-go=\"`measurements`\" pulumi-lang-python=\"`measurements`\" pulumi-lang-yaml=\"`measurements`\" pulumi-lang-java=\"`measurements`\" pulumi-lang-hcl=\"`measurements`\"\u003e`measurements`\u003c/span\u003e stanzas in the file are ignored; declare measurements as \u003cspan pulumi-lang-nodejs=\"`ripe-atlas.Measurement`\" pulumi-lang-dotnet=\"`ripe-atlas.Measurement`\" pulumi-lang-go=\"`Measurement`\" pulumi-lang-python=\"`Measurement`\" pulumi-lang-yaml=\"`ripe-atlas.Measurement`\" pulumi-lang-java=\"`ripe-atlas.Measurement`\" pulumi-lang-hcl=\"`ripeatlas_measurement`\"\u003e`ripe-atlas.Measurement`\u003c/span\u003e resources in HCL instead.\n"
-                    },
-                    "snapshot": {
-                        "type": "string",
-                        "description": "Path to a local `snapshot.json` file produced by `atlasctl refresh`.\n"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "config",
-                    "snapshot"
-                ]
-            },
-            "outputs": {
-                "description": "A collection of values returned by getProbeSelection.\n",
-                "properties": {
-                    "config": {
-                        "type": "string"
-                    },
-                    "id": {
-                        "description": "The provider-assigned unique ID for this managed resource.",
-                        "type": "string"
-                    },
-                    "probeIds": {
-                        "additionalProperties": {
-                            "items": {
-                                "type": "integer"
-                            },
-                            "type": "array"
-                        },
-                        "description": "Map from cohort name to a set of RIPE Atlas probe IDs. Keys match the cohort \u003cspan pulumi-lang-nodejs=\"`name`\" pulumi-lang-dotnet=\"`Name`\" pulumi-lang-go=\"`name`\" pulumi-lang-python=\"`name`\" pulumi-lang-yaml=\"`name`\" pulumi-lang-java=\"`name`\" pulumi-lang-hcl=\"`name`\"\u003e`name`\u003c/span\u003e values defined in `atlasctl.yaml`. Example: `probe_ids[\"high-freq\"]` returns the probe IDs assigned to the `high-freq` cohort.\n",
-                        "type": "object"
-                    },
-                    "snapshot": {
-                        "type": "string"
-                    }
-                },
-                "required": [
-                    "config",
-                    "probeIds",
-                    "snapshot",
-                    "id"
                 ],
                 "type": "object"
             }

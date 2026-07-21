@@ -7,11 +7,11 @@ A Pulumi provider for [RIPE Atlas](https://atlas.ripe.net) measurements. It expo
 This repo contains no resource logic. All CRUD operations, probe selection, drift detection, and API access live in two upstream packages:
 
 - [atlasctl](https://github.com/supabase/atlasctl): the domain library. Probe scoring, selection, the RIPE Atlas API client, and the measurement lifecycle all live here.
-- [terraform-provider-ripe-atlas](https://github.com/supabase/terraform-provider-ripe-atlas): the Terraform provider. It implements `ripeatlas_measurement` and `ripeatlas_probe_selection` using the atlasctl library.
+- [terraform-provider-ripe-atlas](https://github.com/supabase/terraform-provider-ripe-atlas): the Terraform provider. It implements `ripeatlas_measurement` using the atlasctl library.
 
 This repo is a bridge layer using [pulumi-terraform-bridge](https://github.com/pulumi/pulumi-terraform-bridge). The bridge works in two phases:
 
-**Build time.** The `pulumi-tfgen-ripe-atlas` binary imports the Terraform provider as a Go library, reads its schema (resources, data sources, attribute types, validation rules), and generates typed Pulumi SDKs for each target language into `sdk/`. The only configuration required is `provider/resources.go`, which maps Terraform resource names to Pulumi token paths and sets provider metadata.
+**Build time.** The `pulumi-tfgen-ripe-atlas` binary imports the Terraform provider as a Go library, reads its schema (resources, attribute types, validation rules), and generates typed Pulumi SDKs for each target language into `sdk/`. The only configuration required is `provider/resources.go`, which maps Terraform resource names to Pulumi token paths and sets provider metadata.
 
 **Runtime.** The `pulumi-resource-ripe-atlas` binary embeds the generated schema and runs the Terraform provider in-process via the Pulumi Terraform bridge. When `pulumi up` runs, Pulumi calls the bridge, which translates each lifecycle call (preview, create, read, update, delete) into the equivalent Terraform plugin protocol call, executed against the provider implementation in `terraform-provider-ripe-atlas`.
 
@@ -21,96 +21,93 @@ The only file in this repo that requires editing when resources change upstream 
 
 ### `Measurement` (resource)
 
-One resource per RIPE Atlas measurement. Each maps to a single `(name, cohort)` pair and one measurement ID on the RIPE Atlas platform.
+Manages a group of RIPE Atlas measurements sharing a common target and measurement type. Each cohort in the `cohorts` list creates one RIPE Atlas measurement ID from a distinct, non-overlapping slice of the probe pool. Cohorts are selected in declaration order.
 
-Structural attributes (`name`, `cohort`, `target`, `msmType`, `af`, `intervalSeconds`) are immutable. Changing any of them stops the old measurement and creates a new one. `probeIds` is mutable in place: adding or removing probe IDs calls `AddParticipants` or `RemoveParticipants` on the running measurement without recreating it.
-
-**Inputs**
-
-| Attribute | Type | Description |
-|-----------|------|-------------|
-| `name` | string | Logical measurement name. Immutable. |
-| `cohort` | string | Probe group name. Immutable. |
-| `target` | string | DNS name or IP address. Immutable. |
-| `msmType` | string | `dns`, `ping`, `tls`, or `traceroute`. Immutable. |
-| `af` | int | Address family: `4` or `6`. Default `4`. Immutable. |
-| `intervalSeconds` | int | Measurement interval in seconds (minimum 60). Immutable. |
-| `probeIds` | list(int) | RIPE Atlas probe IDs. Mutable in place. |
-
-**Outputs**
-
-| Attribute | Type | Description |
-|-----------|------|-------------|
-| `msmId` | int | RIPE Atlas measurement ID assigned at creation. |
-
-### `getProbeSelection` (data source / function)
-
-Runs the atlasctl probe selection algorithm and returns probe IDs grouped by cohort. Cohort definitions, scoring weights, exclude tags, and geographic diversity are read from an `atlasctl.yaml` config file.
+Immutable attributes (`name`, `target`, `msmType`, `af`, `cohorts[*].name`, `cohorts[*].intervalSeconds`) trigger replacement on change. All other attributes are mutable in place: changes to scoring weights or probe counts re-run selection on the next plan, and the resulting diff drives `AddParticipants` or `RemoveParticipants` on the running measurements without recreating them.
 
 **Inputs**
 
+| Attribute | Type | Required | Immutable | Description |
+|-----------|------|----------|-----------|-------------|
+| `name` | string | yes | yes | Logical measurement name. |
+| `target` | string | yes | yes | DNS name or IP address. |
+| `msmType` | string | yes | yes | One of `dns`, `ping`, `tls`, `traceroute`. |
+| `af` | int | no | yes | Address family: `4` or `6`. Default `4`. |
+| `excludeTags` | list(string) | no | no | Probe tags that hard-exclude a probe from all cohort selection. |
+| `cohorts` | list(object) | yes | partial | Ordered list of cohort configs (see below). |
+
+**`cohorts[*]` fields**
+
+| Attribute | Type | Required | Immutable | Description |
+|-----------|------|----------|-----------|-------------|
+| `name` | string | yes | yes | Cohort tier name, e.g. `high-freq`. |
+| `probeCount` | int | yes | no | Number of probes to select. |
+| `maxProbesPerCell` | int | yes | no | Maximum probes per H3 geographic cell. |
+| `intervalSeconds` | int | yes | yes | Measurement interval in seconds. Minimum 60. |
+| `includeProbeIds` | list(int) | no | no | Probes always included regardless of scoring or H3 cap. |
+| `excludeProbeIds` | list(int) | no | no | Probes never selected in this cohort. |
+| `cfg` | object | no | no | Additive scoring weights: `asn`, `tags`, `countries`, `stability`. |
+
+**Per-cohort computed outputs** (accessed via `cohorts[*]`)
+
 | Attribute | Type | Description |
 |-----------|------|-------------|
-| `snapshot` | string | Path to a local `snapshot.json` produced by `atlasctl refresh`. |
-| `config` | string | Path to `atlasctl.yaml`. |
+| `msmId` | int | RIPE Atlas measurement ID assigned to this cohort. |
+| `probeIds` | list(int) | Probe IDs selected for this cohort. |
 
-**Outputs**
+## Provider configuration
 
-| Attribute | Type | Description |
-|-----------|------|-------------|
-| `probeIds` | map(list(int)) | Probe IDs per cohort name. |
+| Attribute | Env var | Description |
+|-----------|---------|-------------|
+| `apiKey` | `RIPE_ATLAS_API_KEY` | RIPE Atlas API key. Marked sensitive. |
+| `snapshot` | `RIPE_ATLAS_SNAPSHOT` | Path to `snapshot.json` produced by `atlasctl refresh`. |
+
+The snapshot is configured once at the provider level and shared across all resources.
+
+Required API key permissions are documented in the [atlasctl README](https://github.com/supabase/atlasctl#required-api-key-permissions).
 
 ## Usage (TypeScript)
 
 For Go, Python, and TypeScript examples see [docs/snippets.md](docs/snippets.md).
 
-Run `atlasctl refresh` to update your local probe snapshot before previewing, then use
-`getProbeSelectionOutput` to feed probe IDs directly into `Measurement` resources.
-
 ```typescript
-import * as pulumi from "@pulumi/pulumi";
 import * as ripeAtlas from "@supabase/ripe-atlas";
 
-// Run probe selection locally during `pulumi preview`.
-// Update snapshot.json beforehand with: atlasctl refresh
-const selected = ripeAtlas.getProbeSelectionOutput({
+const provider = new ripeAtlas.Provider("ripe-atlas", {
     snapshot: "./snapshot.json",
-    config:   "./atlasctl.yaml",
 });
 
-// High-frequency DNS canary: 30 probes, every 60s
-const dnsCanaryHigh = new ripeAtlas.Measurement("dns-canary-high", {
-    name:            "dns-canary",
-    cohort:          "high-freq",
-    target:          "canary.supabase.co",
-    msmType:         "dns",
-    intervalSeconds: 60,
-    probeIds:        selected.apply(s => s.probeIds["high-freq"]),
-});
+const dnsCanary = new ripeAtlas.Measurement("dns-canary", {
+    name:        "dns-canary",
+    target:      "canary.supabase.co",
+    msmType:     "dns",
+    excludeTags: ["broken", "system-flakey-connection"],
+    cohorts: [
+        {
+            name:             "high-freq",
+            probeCount:       30,
+            maxProbesPerCell: 1,
+            intervalSeconds:  60,
+            cfg: {
+                asn:       { "7018": 10, "7922": 8 },
+                stability: { "system-ipv4-stable-90d": 5 },
+            },
+        },
+        {
+            name:             "low-freq",
+            probeCount:       100,
+            maxProbesPerCell: 3,
+            intervalSeconds:  900,
+        },
+    ],
+}, { provider });
 
-// Low-frequency DNS canary: 100 probes, every 15m
-const dnsCanaryLow = new ripeAtlas.Measurement("dns-canary-low", {
-    name:            "dns-canary",
-    cohort:          "low-freq",
-    target:          "canary.supabase.co",
-    msmType:         "dns",
-    intervalSeconds: 900,
-    probeIds:        selected.apply(s => s.probeIds["low-freq"]),
-});
-
-export const highFreqMsmId = dnsCanaryHigh.msmId;
-export const lowFreqMsmId  = dnsCanaryLow.msmId;
+export const highFreqMsmId = dnsCanary.cohorts.apply(cs => cs[0].msmId);
+export const lowFreqMsmId  = dnsCanary.cohorts.apply(cs => cs[1].msmId);
 ```
 
-Use `getProbeSelectionOutput` (the `Output`-returning variant) rather than
-`getProbeSelection` when passing results directly into resource arguments. `msmId` is
-a computed output, available after `pulumi up` but not during preview.
-
-## Provider configuration
-
-Set `RIPE_ATLAS_API_KEY` in the environment, or pass `apiKey` explicitly. The key is marked sensitive and never appears in plain text in Pulumi state.
-
-Required API key permissions are documented in the [atlasctl README](https://github.com/supabase/atlasctl#required-api-key-permissions).
+`msmId` and `probeIds` are per-cohort computed outputs, available after `pulumi up`
+but unknown during preview.
 
 ## Credit costs
 
@@ -121,7 +118,7 @@ Required API key permissions are documented in the [atlasctl README](https://git
 | ping | 3 |
 | traceroute | 30 |
 
-Total hourly cost per measurement: `(3600 / intervalSeconds) * creditsPerResult * len(probeIds)`.
+Total hourly cost per cohort: `(3600 / intervalSeconds) * creditsPerResult * probeCount`.
 
 Full background on RIPE Atlas, probe selection, and credit accounting is in the [atlasctl README](https://github.com/supabase/atlasctl/blob/main/README.md).
 
@@ -143,7 +140,7 @@ make generate   # regenerate schema.json, bridge-metadata.json, and all SDKs
 make build      # rebuild the resource binary with the new schema embedded
 ```
 
-`make generate` is not needed for runtime changes that do not touch the schema (for example, bug fixes inside the Terraform provider that leave resource attributes unchanged). A schema change is any addition, removal, or type change of a resource, data source, or attribute.
+`make generate` is not needed for runtime changes that do not touch the schema (for example, bug fixes inside the Terraform provider that leave resource attributes unchanged). A schema change is any addition, removal, or type change of a resource or attribute.
 
 ## Local development
 
@@ -154,7 +151,7 @@ make install
 pulumi up   # Pulumi will find the installed binary automatically
 ```
 
-Auth: set `RIPE_ATLAS_API_KEY` in the environment.
+Auth: set `RIPE_ATLAS_API_KEY` and `RIPE_ATLAS_SNAPSHOT` in the environment, or configure them via the provider block.
 
 The `goat` CLI is useful for inspecting live measurements independently of Pulumi:
 

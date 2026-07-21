@@ -3,9 +3,9 @@ package provider
 import (
 	_ "embed"
 
-	pf      "github.com/pulumi/pulumi-terraform-bridge/v3/pkg/pf/tfbridge"
+	pf  "github.com/pulumi/pulumi-terraform-bridge/v3/pkg/pf/tfbridge"
 	"github.com/pulumi/pulumi-terraform-bridge/v3/pkg/tfbridge"
-	tfp     "github.com/supabase/terraform-provider-ripe-atlas/provider"
+	tfp "github.com/supabase/terraform-provider-ripe-atlas/provider"
 	"github.com/supabase/pulumi-atlas/provider/version"
 )
 
@@ -22,14 +22,13 @@ func Provider() tfbridge.ProviderInfo {
 		GitHubOrg:        "supabase",
 		ResourcePrefix:   "ripeatlas",
 		UpstreamRepoPath: "../terraform-provider-ripe-atlas",
+		Golang: &tfbridge.GolangInfo{
+			ImportBasePath: "github.com/supabase/pulumi-atlas/sdk/go/ripeatlas",
+			ModulePath:     "github.com/supabase/pulumi-atlas/sdk/go/ripeatlas",
+		},
 		Resources: map[string]*tfbridge.ResourceInfo{
 			"ripeatlas_measurement": {
 				Tok: tfbridge.MakeResource("ripe-atlas", "index", "Measurement"),
-			},
-		},
-		DataSources: map[string]*tfbridge.DataSourceInfo{
-			"ripeatlas_probe_selection": {
-				Tok: tfbridge.MakeDataSource("ripe-atlas", "index", "getProbeSelection"),
 			},
 		},
 		MetadataInfo: tfbridge.NewProviderMetadata(bridgeMetadata),
