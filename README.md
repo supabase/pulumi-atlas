@@ -61,6 +61,7 @@ Immutable attributes (`name`, `target`, `msmType`, `af`, `cohorts[*].name`, `coh
 |-----------|---------|-------------|
 | `apiKey` | `RIPE_ATLAS_API_KEY` | RIPE Atlas API key. Marked sensitive. |
 | `snapshot` | `RIPE_ATLAS_SNAPSHOT` | Path to `snapshot.json` produced by `atlasctl refresh`. |
+| `tagPrefix` | — | Prefix for RIPE Atlas measurement tags used to encode state. Defaults to the atlasctl built-in prefix. Set a distinct value per stack when multiple Pulumi stacks manage RIPE Atlas measurements, to prevent tag collisions between stacks (analogous to separate Terraform state files). |
 
 The snapshot is configured once at the provider level and shared across all resources.
 
