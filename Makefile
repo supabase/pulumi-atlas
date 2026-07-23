@@ -1,12 +1,14 @@
 TFGEN    = pulumi-tfgen-ripe-atlas
 PROVIDER = pulumi-resource-ripe-atlas
 BINDIR   = bin
+VERSION  := $(shell git describe --tags --always --dirty 2>/dev/null || echo "0.0.1")
+LDFLAGS  := -X github.com/supabase/pulumi-atlas/provider/version.Version=$(VERSION)
 
 .PHONY: build generate install clean sync-sdk
 
 build:
-	go build -o $(BINDIR)/$(TFGEN)    ./provider/cmd/$(TFGEN)
-	go build -o $(BINDIR)/$(PROVIDER) ./provider/cmd/$(PROVIDER)
+	go build -ldflags "$(LDFLAGS)" -o $(BINDIR)/$(TFGEN)    ./provider/cmd/$(TFGEN)
+	go build -ldflags "$(LDFLAGS)" -o $(BINDIR)/$(PROVIDER) ./provider/cmd/$(PROVIDER)
 
 generate: $(BINDIR)/$(TFGEN)
 	GOWORK=off ./$(BINDIR)/$(TFGEN) schema   --out provider/cmd/$(PROVIDER)
@@ -15,7 +17,7 @@ generate: $(BINDIR)/$(TFGEN)
 	GOWORK=off ./$(BINDIR)/$(TFGEN) python   --out sdk/python
 
 $(BINDIR)/$(TFGEN):
-	go build -o $(BINDIR)/$(TFGEN) ./provider/cmd/$(TFGEN)
+	go build -ldflags "$(LDFLAGS)" -o $(BINDIR)/$(TFGEN) ./provider/cmd/$(TFGEN)
 
 PLATFORM_PULUMI ?= ../platform/pulumi
 
