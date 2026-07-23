@@ -1,81 +1,42 @@
-# TODO: pre-publication blockers and follow-ups
+# TODO: post-publication follow-ups
 
-Items that cannot be completed until the relevant repos are public, plus housekeeping
-that should happen at publication time.
+All three repos (atlasctl, terraform-provider-ripe-atlas, pulumi-atlas) are now public.
 
 ---
 
-## go.work cleanup at publication time
+## go.work cleanup (when cross-repo development is done)
 
-`go.work` currently resolves `atlasctl` and `terraform-provider-ripe-atlas` from local
-paths. When both modules are published, remove their entries from `go.work`:
+`go.work` still has `use` and `replace` entries for the sibling repos — useful while
+actively developing across all three. Remove them when you no longer need local edits to
+resolve:
 
 ```
-# Remove these two use entries:
+# Remove:
 use ../atlasctl
 use ../terraform-provider-ripe-atlas
 
-# Remove these two replace directives:
 replace github.com/supabase/atlasctl v0.1.2 => ../atlasctl
 replace github.com/supabase/terraform-provider-ripe-atlas v0.1.2 => ../terraform-provider-ripe-atlas
 ```
 
-`go.mod` already requires both at `v0.1.2` with no local replace. Once published at that
-tag the build resolves them from the module proxy without go.work.
-
-Also remove the two commented-out replace lines at the bottom of `go.mod` (cosmetic cleanup):
-
-```go
-// replace github.com/supabase/terraform-provider-ripe-atlas => ../terraform-provider-ripe-atlas
-// replace github.com/supabase/atlasctl => ../atlasctl
-```
-
-Keep permanently (Pulumi bridge requirement, not a local path):
-
-```
-replace github.com/hashicorp/terraform-plugin-sdk/v2 => github.com/pulumi/terraform-plugin-sdk/v2 ...
-```
+`go.mod` already requires both at `v0.1.2` with no local replace, so once removed the
+build resolves them from the module proxy.
 
 ### terraform-provider-ripe-atlas/go.work
 
-Same situation: remove the `use` and `replace` entries for atlasctl once it is published.
-
----
-
-## provider/resources.go
-
-Remove `UpstreamRepoPath` once the Terraform provider repo is public. The bridge will
-then resolve docs by downloading the module via `go mod download`, using `GitHubOrg` and
-`Name` to locate the repo:
-
-```go
-// Remove this line:
-UpstreamRepoPath: "../terraform-provider-ripe-atlas",
-```
-
----
-
-## Publish order
-
-The repos have a dependency chain. Publish in this order:
-
-1. `atlasctl` — no external local deps
-2. `terraform-provider-ripe-atlas` — depends on atlasctl
-3. `pulumi-atlas` — depends on both
-
-Publishing terraform-provider-ripe-atlas to the Terraform registry is a prerequisite for
-the Pulumi provider's HCL example conversion to work during `make generate`.
+Same: remove `use` and `replace` for atlasctl when done with cross-repo work.
 
 ---
 
 ## HCL example conversion
 
-`make generate` currently warns that examples cannot be converted to Go/TypeScript/Python/etc.
-because the Terraform provider is not yet in the registry. Once it is, rerun `make generate`
-and verify the converted examples look correct in the generated SDK docs.
+`make generate` warns that examples cannot be converted because the Terraform provider is
+not yet in the **Terraform Registry** (GitHub-public is not sufficient — the registry
+requires a separate submission). Once it is registered, rerun `make generate` and verify
+the converted examples.
 
-If example conversion is still undesirable after publication (e.g. the HCL examples use
-local file paths that do not translate cleanly), suppress it per-resource with:
+If example conversion is still undesirable after registration (e.g. HCL examples use local
+file paths that do not translate cleanly), suppress it per-resource with:
 
 ```go
 "ripeatlas_measurement": {
@@ -88,23 +49,8 @@ local file paths that do not translate cleanly), suppress it per-resource with:
 
 ## platform/pulumi/monitoring-ripe-atlas provider resolution
 
-`Pulumi.yaml` currently declares the provider via `path: ../../../pulumi-atlas`, which only
-works with both repos checked out side by side. The stack cannot run in platform CI until
-this is changed.
-
-Once `pulumi-atlas` has GitHub releases, update `Pulumi.yaml`:
-
-```yaml
-plugins:
-  providers:
-    - name: atlas
-      version: X.Y.Z
-      server: github://api.github.com/supabase/pulumi-atlas
-```
-
-Pulumi will then download `pulumi-resource-ripe-atlas` from the release assets. The shared
-`_pulumi_workflow.yaml` already caches `~/.pulumi/plugins` keyed on `pnpm-lock.yaml`, so
-the binary is cached across runs without any extra workflow changes.
+Done. `Pulumi.yaml` now pins `v0.1.0` from GitHub releases. Update the version here when
+a new release is cut.
 
 ---
 
@@ -119,8 +65,7 @@ Neither repo has release CI yet.
 - `pulumi-atlas` has `.github/workflows/release.yml` and `.goreleaser.yml`. The release
   workflow builds and archives `pulumi-resource-ripe-atlas` for all platforms and attaches
   archives to the GitHub release. What is not yet wired: publishing SDK packages to
-  npm/PyPI/NuGet. Add those as separate steps in the release workflow once SDK package
-  names are decided (see below).
+  npm/PyPI/NuGet.
 
 ---
 
@@ -133,28 +78,25 @@ Neither repo has release CI yet.
 | Python   | PyPI       | `supabase-pulumi-ripe-atlas`                            | not set |
 | .NET     | NuGet      | `Supabase.Pulumi.RipeAtlas`                             | not set |
 
-Set remaining names in `provider/resources.go` under the `Python` and `CSharp` fields of
-`ProviderInfo` before the first published release. Changing them later is a breaking change.
+Set remaining names in `provider/resources.go` under the `Python` and `CSharp` fields
+before the first published release. Changing them later is a breaking change.
 
 ---
 
 ## npm publish for the Node.js SDK
 
-### Current state (pre-publication)
+### Current state
 
 `platform/pulumi/ripe-atlas-sdk/` is a vendored copy of `sdk/nodejs/` checked into the
 platform repo. `monitoring-ripe-atlas` depends on it via `"@supabase/ripe-atlas": "workspace:*"`.
 
-To sync after a schema change: run `make sync-sdk` in this repo. That re-runs `make generate`
-and rsyncs the result to `../platform/pulumi/ripe-atlas-sdk/`, patching the version to `0.0.1`
-so pnpm accepts it.
+To sync after a schema change: run `make sync-sdk` in this repo.
 
 ### One-time setup for npm publishing
 
 1. Done. `JavaScript.PackageName` is set to `@supabase/ripe-atlas` in `provider/resources.go`.
 2. Create the `@supabase/ripe-atlas` package on npmjs.com under the `@supabase` org scope.
-3. Configure OIDC trusted publishing on npmjs.com for this repo (Granular Access Token or
-   Provenance). This avoids a static `NPM_TOKEN` secret that needs rotation.
+3. Configure OIDC trusted publishing on npmjs.com for this repo.
 
 ### Release workflow addition
 
@@ -179,10 +121,6 @@ Add a step to `.github/workflows/release.yml` after GoReleaser completes:
     NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 ```
 
-The `sed` substitutes the git tag version into the `${VERSION}` placeholder that `make
-generate` writes into `package.json`. This mirrors what GoReleaser does for the Go binary
-via ldflags.
-
 ### Migration from workspace to npm (do after first published release)
 
 Once `@supabase/ripe-atlas` is live on npm:
@@ -191,17 +129,8 @@ Once `@supabase/ripe-atlas` is live on npm:
    ```yaml
    "@supabase/ripe-atlas": "^X.Y.Z"
    ```
-2. In `platform/pulumi/monitoring-ripe-atlas/package.json`, change:
-   ```json
-   "@supabase/ripe-atlas": "workspace:*"
-   ```
-   to:
-   ```json
-   "@supabase/ripe-atlas": "catalog:"
-   ```
+2. In `platform/pulumi/monitoring-ripe-atlas/package.json`, change to `"catalog:"`.
 3. Delete `platform/pulumi/ripe-atlas-sdk/` and run `pnpm install`.
-4. The `sync-sdk` Makefile target can be removed or kept for local development against
-   unreleased schema changes.
 
 ---
 

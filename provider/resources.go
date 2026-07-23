@@ -20,8 +20,7 @@ func Provider() tfbridge.ProviderInfo {
 		DisplayName:      "RIPE Atlas",
 		Publisher:        "supabase",
 		GitHubOrg:        "supabase",
-		ResourcePrefix:   "ripeatlas",
-		UpstreamRepoPath: "../terraform-provider-ripe-atlas",
+		ResourcePrefix: "ripeatlas",
 		Golang: &tfbridge.GolangInfo{
 			ImportBasePath: "github.com/supabase/pulumi-atlas/sdk/go/ripeatlas",
 			ModulePath:     "github.com/supabase/pulumi-atlas/sdk/go/ripeatlas",

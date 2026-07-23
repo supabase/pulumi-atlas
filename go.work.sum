@@ -248,7 +248,7 @@ github.com/skeema/knownhosts v1.3.1/go.mod h1:r7KTdC8l4uxWRyK2TpQZ/1o5HaSzh06ePQ
 github.com/sourcegraph/appdash-data v0.0.0-20151005221446-73f23eafcf67/go.mod h1:tNZjgbYncKL5HxvDULAr/mWDmFz4B7H8yrXEDlnoIiw=
 github.com/supabase/atlasctl v0.1.0/go.mod h1:JUT3gK8l5SHEf7X8xfL5Jnt7kyImFYlXIqBwFRFTLdA=
 github.com/supabase/atlasctl v0.1.1/go.mod h1:ZjGg6NODzVadaM4/oD+Vbc2s3ulUVbPGllz2BN+Jnt8=
-github.com/supabase/terraform-provider-ripe-atlas v0.1.2/go.mod h1:7QcqJ+OaA2YNwagH0Iizx1YXFqbj7r9H+oso7tOamLs=
+github.com/supabase/atlasctl v0.1.2/go.mod h1:eBokKZHdtMrx6Yw2H4hkngVfCj/OFLpyzbrbCOy7KKU=
 github.com/terraform-providers/terraform-provider-random v1.3.2-0.20231204135814-c6e90de46687/go.mod h1:nH2NdrX91QoiiaPJsTZ9vKoezUq5IgHJ8nijpD6lT5o=
 github.com/tklauser/go-sysconf v0.3.10/go.mod h1:C8XykCvCb+Gn0oNCWPIlcb0RuglQTYaQ2hGm7jmxEFk=
 github.com/tklauser/numcpus v0.4.0/go.mod h1:1+UI3pD8NW14VMwdgJNJ1ESk2UnwhAnz5hMwiKKqXCQ=
