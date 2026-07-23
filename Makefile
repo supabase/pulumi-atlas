@@ -9,10 +9,10 @@ build:
 	go build -o $(BINDIR)/$(PROVIDER) ./provider/cmd/$(PROVIDER)
 
 generate: $(BINDIR)/$(TFGEN)
-	./$(BINDIR)/$(TFGEN) schema   --out provider/cmd/$(PROVIDER)
-	./$(BINDIR)/$(TFGEN) go       --out sdk/go
-	./$(BINDIR)/$(TFGEN) nodejs   --out sdk/nodejs
-	./$(BINDIR)/$(TFGEN) python   --out sdk/python
+	GOWORK=off ./$(BINDIR)/$(TFGEN) schema   --out provider/cmd/$(PROVIDER)
+	GOWORK=off ./$(BINDIR)/$(TFGEN) go       --out sdk/go
+	GOWORK=off ./$(BINDIR)/$(TFGEN) nodejs   --out sdk/nodejs
+	GOWORK=off ./$(BINDIR)/$(TFGEN) python   --out sdk/python
 
 $(BINDIR)/$(TFGEN):
 	go build -o $(BINDIR)/$(TFGEN) ./provider/cmd/$(TFGEN)

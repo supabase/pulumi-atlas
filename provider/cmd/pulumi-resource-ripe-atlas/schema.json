@@ -38,10 +38,6 @@
             "snapshot": {
                 "type": "string",
                 "description": "Path to the probe snapshot JSON file. Falls back to RIPE_ATLAS_SNAPSHOT env var."
-            },
-            "tagPrefix": {
-                "type": "string",
-                "description": "Identifier to store on each measurement in the RIPE API. Use for differentiating terraform states"
             }
         }
     },
@@ -161,10 +157,6 @@
             "snapshot": {
                 "type": "string",
                 "description": "Path to the probe snapshot JSON file. Falls back to RIPE_ATLAS_SNAPSHOT env var."
-            },
-            "tagPrefix": {
-                "type": "string",
-                "description": "Identifier to store on each measurement in the RIPE API. Use for differentiating terraform states"
             }
         },
         "inputProperties": {
@@ -180,10 +172,6 @@
             "snapshot": {
                 "type": "string",
                 "description": "Path to the probe snapshot JSON file. Falls back to RIPE_ATLAS_SNAPSHOT env var."
-            },
-            "tagPrefix": {
-                "type": "string",
-                "description": "Identifier to store on each measurement in the RIPE API. Use for differentiating terraform states"
             }
         },
         "methods": {
