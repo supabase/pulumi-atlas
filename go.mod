@@ -6,7 +6,7 @@ require (
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/pulumi/pulumi-terraform-bridge/v3 v3.134.0
 	github.com/pulumi/pulumi/sdk/v3 v3.251.0
-	github.com/supabase/terraform-provider-ripe-atlas v0.1.2
+	github.com/supabase/terraform-provider-ripe-atlas v0.1.5
 )
 
 require (
@@ -188,7 +188,7 @@ require (
 	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/spiffe/go-spiffe/v2 v2.6.0 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
-	github.com/supabase/atlasctl v0.1.2 // indirect
+	github.com/supabase/atlasctl v0.1.3 // indirect
 	github.com/teekennedy/goldmark-markdown v0.3.0 // indirect
 	github.com/texttheater/golang-levenshtein v1.0.1 // indirect
 	github.com/uber/jaeger-client-go v2.30.0+incompatible // indirect
@@ -244,7 +244,3 @@ require (
 )
 
 replace github.com/hashicorp/terraform-plugin-sdk/v2 => github.com/pulumi/terraform-plugin-sdk/v2 v2.0.0-20260318212141-5525259d096b
-
-// replace github.com/supabase/terraform-provider-ripe-atlas => ../terraform-provider-ripe-atlas
-
-// replace github.com/supabase/atlasctl => ../atlasctl

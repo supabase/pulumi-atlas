@@ -540,10 +540,10 @@ github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/
 github.com/stretchr/testify v1.7.2/go.mod h1:R6va5+xMeoiuVRoj+gSkQ7d3FALtqAAGI1FQKckRals=
 github.com/stretchr/testify v1.11.1 h1:7s2iGBzp5EwR7/aIZr8ao5+dra3wiQyKjjFuvgVKu7U=
 github.com/stretchr/testify v1.11.1/go.mod h1:wZwfW3scLgRK+23gO65QZefKpKQRnfz6sD981Nm4B6U=
-github.com/supabase/atlasctl v0.1.2 h1:dGqjxD5Q2hNVtVcBFue9U11LETHs2K2IWdA5KPXT50k=
-github.com/supabase/atlasctl v0.1.2/go.mod h1:eBokKZHdtMrx6Yw2H4hkngVfCj/OFLpyzbrbCOy7KKU=
-github.com/supabase/terraform-provider-ripe-atlas v0.1.2 h1:NrTMPl30U958uA6QIr6V3Tvc5OGjVS2xE1in2ljlHlY=
-github.com/supabase/terraform-provider-ripe-atlas v0.1.2/go.mod h1:7QcqJ+OaA2YNwagH0Iizx1YXFqbj7r9H+oso7tOamLs=
+github.com/supabase/atlasctl v0.1.3 h1:sd6bRkPN3IbZUoP34XuvdVKmRsQ4/gl+hFH9qEhpYc8=
+github.com/supabase/atlasctl v0.1.3/go.mod h1:eBokKZHdtMrx6Yw2H4hkngVfCj/OFLpyzbrbCOy7KKU=
+github.com/supabase/terraform-provider-ripe-atlas v0.1.5 h1:ocBBCkrkMwHO5LnQz1bEpPQZyyAoaSAlcLx7mRLjm/8=
+github.com/supabase/terraform-provider-ripe-atlas v0.1.5/go.mod h1:WCNWEYbO0vDnuBTFwUN6P1LVTGGjaeZCO51bZfndI3A=
 github.com/teekennedy/goldmark-markdown v0.3.0 h1:ik9/biVGCwGWFg8dQ3KVm2pQ/wiiG0whYiUcz9xH0W8=
 github.com/teekennedy/goldmark-markdown v0.3.0/go.mod h1:kMhDz8La77A9UHvJGsxejd0QUflN9sS+QXCqnhmxmNo=
 github.com/texttheater/golang-levenshtein v1.0.1 h1:+cRNoVrfiwufQPhoMzB6N0Yf/Mqajr6t1lOv8GyGE2U=
