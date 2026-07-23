@@ -26,7 +26,7 @@ sync-sdk: generate
 		--exclude=node_modules \
 		--exclude=package-lock.json \
 		sdk/nodejs/ $(PLATFORM_PULUMI)/ripe-atlas-sdk/
-	sed -i '' 's/"version": "[^"]*"/"version": "0.0.1"/' \
+	sed -i '' 's/"version": "[^"]*"/"version": "$(VERSION)"/' \
 		$(PLATFORM_PULUMI)/ripe-atlas-sdk/package.json
 
 install: build
