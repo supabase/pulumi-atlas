@@ -29,6 +29,13 @@ func Provider() tfbridge.ProviderInfo {
 		JavaScript: &tfbridge.JavaScriptInfo{
 			PackageName: "@supabase/ripe-atlas",
 		},
+		Config: map[string]*tfbridge.SchemaInfo{
+			"namespace": {
+				Default: &tfbridge.DefaultInfo{
+					Value: "pulumi-atlas",
+				},
+			},
+		},
 		Resources: map[string]*tfbridge.ResourceInfo{
 			"ripeatlas_measurement": {
 				Tok: tfbridge.MakeResource("ripe-atlas", "index", "Measurement"),
