@@ -67,6 +67,18 @@ The snapshot is configured once at the provider level and shared across all reso
 
 Required API key permissions are documented in the [atlasctl README](https://github.com/supabase/atlasctl#required-api-key-permissions).
 
+**Always pass the provider instance explicitly to every resource** (see `{ provider }` in the usage example below). If you omit it, Pulumi silently uses the default provider, which is configured only from stack config variables and ignores any constructor arguments you passed to your `Provider` instance. This means `snapshotCachePath`, `namespace`, and similar values will be missing, and the provider falls back to its built-in defaults.
+
+To make this mistake a hard error rather than a silent misconfiguration, add the following to your `Pulumi.<stack>.yaml`:
+
+```yaml
+config:
+  pulumi:disable-default-providers:
+    - ripeatlas
+```
+
+With that setting, any resource missing an explicit `{ provider }` option will fail immediately at registration time.
+
 ## Usage (TypeScript)
 
 For Go, Python, and TypeScript examples see [docs/snippets.md](docs/snippets.md).

@@ -14,12 +14,12 @@ var bridgeMetadata []byte
 
 func Provider() tfbridge.ProviderInfo {
 	return tfbridge.ProviderInfo{
-		P:                pf.ShimProvider(tfp.New()),
-		Name:             "ripe-atlas",
-		Version:          version.Version,
-		DisplayName:      "RIPE Atlas",
-		Publisher:        "supabase",
-		GitHubOrg:        "supabase",
+		P:              pf.ShimProvider(tfp.New()),
+		Name:           "ripe-atlas",
+		Version:        version.Version,
+		DisplayName:    "RIPE Atlas",
+		Publisher:      "supabase",
+		GitHubOrg:      "supabase",
 		ResourcePrefix: "ripeatlas",
 		Golang: &tfbridge.GolangInfo{
 			ImportBasePath: "github.com/supabase/pulumi-atlas/sdk/go/ripeatlas",
@@ -29,11 +29,17 @@ func Provider() tfbridge.ProviderInfo {
 			PackageName: "@supabase/ripe-atlas",
 		},
 		Config: map[string]*tfbridge.SchemaInfo{
-			"namespace": {
-				Default: &tfbridge.DefaultInfo{
-					Value: "pulumi-atlas",
-				},
+			"api_key": {
+				Secret: tfbridge.True(),
 			},
+			"namespace": {
+				Default: &tfbridge.DefaultInfo{Value: "pulumi-atlas"},
+			},
+
+			"snapshot":            {},
+			"snapshot_cache_path": {},
+			"snapshot_ttl":        {},
+			// "namespace":           {},
 		},
 		Resources: map[string]*tfbridge.ResourceInfo{
 			"ripeatlas_measurement": {
