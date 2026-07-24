@@ -27,7 +27,7 @@ archives:
   - id: pulumi-resource-ripe-atlas
     builds:
       - pulumi-resource-ripe-atlas
-    name_template: "pulumi-resource-atlas-v{{ .Version }}-{{ .Os }}-{{ .Arch }}"
+    name_template: "pulumi-resource-{{ .ProjectName }}-v{{ .Version }}-{{ .Os }}-{{ .Arch }}"
     formats:
       - tar.gz
     format_overrides:
