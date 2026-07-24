@@ -22,10 +22,9 @@ const provider = new ripeAtlas.Provider("ripe-atlas", {
 });
 
 const dnsCanary = new ripeAtlas.Measurement("dns-canary", {
-    name:        "dns-canary",
-    target:      "canary.supabase.co",
-    msmType:     "dns",
-    excludeTags: ["broken", "system-flakey-connection"],
+    name:    "dns-canary",
+    target:  "canary.supabase.co",
+    msmType: "dns",
     cohorts: [
         {
             name:             "high-freq",
@@ -33,8 +32,9 @@ const dnsCanary = new ripeAtlas.Measurement("dns-canary", {
             maxProbesPerCell: 1,
             intervalSeconds:  60,
             cfg: {
-                asn:       { "7018": 10, "7922": 8 },
-                stability: { "system-ipv4-stable-90d": 5 },
+                asn:         { "7018": 10, "7922": 8 },
+                stability:   { "system-ipv4-stable-90d": 5 },
+                excludeTags: ["broken", "system-flakey-connection"],
             },
         },
         {
@@ -46,10 +46,11 @@ const dnsCanary = new ripeAtlas.Measurement("dns-canary", {
     ],
 }, { provider });
 
-// msmId and probeIds are computed per cohort, available after pulumi up.
-export const highFreqMsmId    = dnsCanary.cohorts.apply(cs => cs[0].msmId);
-export const highFreqProbeIds = dnsCanary.cohorts.apply(cs => cs[0].probeIds);
-export const lowFreqMsmId     = dnsCanary.cohorts.apply(cs => cs[1].msmId);
+export const highFreqMsmId     = dnsCanary.cohorts.apply(cs => cs[0].msmId);
+export const highFreqProbeIds  = dnsCanary.cohorts.apply(cs => cs[0].probeIds);
+export const highFreqDailyBurn = dnsCanary.cohorts.apply(cs => cs[0].dailyCredits);
+export const lowFreqMsmId      = dnsCanary.cohorts.apply(cs => cs[1].msmId);
+export const totalDailyCredits = dnsCanary.totalDailyCredits;
 ```
 
 ---
@@ -70,7 +71,6 @@ dns_canary = ripe_atlas.Measurement("dns-canary",
     name="dns-canary",
     target="canary.supabase.co",
     msm_type="dns",
-    exclude_tags=["broken", "system-flakey-connection"],
     cohorts=[
         ripe_atlas.MeasurementCohortArgs(
             name="high-freq",
@@ -80,6 +80,7 @@ dns_canary = ripe_atlas.Measurement("dns-canary",
             cfg=ripe_atlas.MeasurementCohortCfgArgs(
                 asn={"7018": 10, "7922": 8},
                 stability={"system-ipv4-stable-90d": 5},
+                exclude_tags=["broken", "system-flakey-connection"],
             ),
         ),
         ripe_atlas.MeasurementCohortArgs(
@@ -92,9 +93,11 @@ dns_canary = ripe_atlas.Measurement("dns-canary",
     opts=pulumi.ResourceOptions(provider=provider),
 )
 
-pulumi.export("high_freq_msm_id",    dns_canary.cohorts[0].msm_id)
-pulumi.export("high_freq_probe_ids", dns_canary.cohorts[0].probe_ids)
-pulumi.export("low_freq_msm_id",     dns_canary.cohorts[1].msm_id)
+pulumi.export("high_freq_msm_id",     dns_canary.cohorts[0].msm_id)
+pulumi.export("high_freq_probe_ids",  dns_canary.cohorts[0].probe_ids)
+pulumi.export("high_freq_daily_burn", dns_canary.cohorts[0].daily_credits)
+pulumi.export("low_freq_msm_id",      dns_canary.cohorts[1].msm_id)
+pulumi.export("total_daily_credits",  dns_canary.total_daily_credits)
 ```
 
 ---
@@ -112,7 +115,7 @@ import (
 func main() {
     pulumi.Run(func(ctx *pulumi.Context) error {
         provider, err := ripeatlas.NewProvider(ctx, "ripe-atlas", &ripeatlas.ProviderArgs{
-            ApiKey:   pulumi.String(pulumi.String(ctx.MustGetConfig("apiKey"))),
+            ApiKey:   pulumi.String(ctx.MustGetConfig("apiKey")),
             Snapshot: pulumi.String("./snapshot.json"),
         })
         if err != nil {
@@ -120,10 +123,9 @@ func main() {
         }
 
         dnsCanary, err := ripeatlas.NewMeasurement(ctx, "dns-canary", &ripeatlas.MeasurementArgs{
-            Name:        pulumi.String("dns-canary"),
-            Target:      pulumi.String("canary.supabase.co"),
-            MsmType:     pulumi.String("dns"),
-            ExcludeTags: pulumi.StringArray{pulumi.String("broken"), pulumi.String("system-flakey-connection")},
+            Name:    pulumi.String("dns-canary"),
+            Target:  pulumi.String("canary.supabase.co"),
+            MsmType: pulumi.String("dns"),
             Cohorts: ripeatlas.MeasurementCohortArray{
                 ripeatlas.MeasurementCohortArgs{
                     Name:             pulumi.String("high-freq"),
@@ -131,8 +133,9 @@ func main() {
                     MaxProbesPerCell: pulumi.Int(1),
                     IntervalSeconds:  pulumi.Int(60),
                     Cfg: ripeatlas.MeasurementCohortCfgArgs{
-                        Asn:       pulumi.IntMap{"7018": pulumi.Int(10), "7922": pulumi.Int(8)},
-                        Stability: pulumi.IntMap{"system-ipv4-stable-90d": pulumi.Int(5)},
+                        Asn:         pulumi.IntMap{"7018": pulumi.Int(10), "7922": pulumi.Int(8)},
+                        Stability:   pulumi.IntMap{"system-ipv4-stable-90d": pulumi.Int(5)},
+                        ExcludeTags: pulumi.StringArray{pulumi.String("broken"), pulumi.String("system-flakey-connection")},
                     }.ToMeasurementCohortCfgPtrOutput(),
                 },
                 ripeatlas.MeasurementCohortArgs{
@@ -147,8 +150,10 @@ func main() {
             return err
         }
 
-        ctx.Export("highFreqMsmId", dnsCanary.Cohorts.Index(pulumi.Int(0)).MsmId())
-        ctx.Export("lowFreqMsmId",  dnsCanary.Cohorts.Index(pulumi.Int(1)).MsmId())
+        ctx.Export("highFreqMsmId",     dnsCanary.Cohorts.Index(pulumi.Int(0)).MsmId())
+        ctx.Export("highFreqDailyBurn", dnsCanary.Cohorts.Index(pulumi.Int(0)).DailyCredits())
+        ctx.Export("lowFreqMsmId",      dnsCanary.Cohorts.Index(pulumi.Int(1)).MsmId())
+        ctx.Export("totalDailyCredits", dnsCanary.TotalDailyCredits())
         return nil
     })
 }
@@ -166,9 +171,14 @@ same resource.
 **Snapshot is provider-level.** Configure it once via the provider block or the
 `RIPE_ATLAS_SNAPSHOT` environment variable. It does not appear on individual resources.
 
-**`msmId` and `probeIds` are per-cohort computed outputs.** They are unknown during
-`pulumi preview` and resolve after `pulumi up`. Access them by index on the `cohorts`
-output array.
+**`msmId`, `probeIds`, `hourlyCredits`, and `dailyCredits` are per-cohort computed outputs.**
+They are populated at plan time (during `pulumi preview`) and resolve definitively after
+`pulumi up`. Access them by index on the `cohorts` output array. `totalHourlyCredits` and
+`totalDailyCredits` on the measurement sum across all cohorts.
+
+**`excludeTags` is per-cohort.** Set it inside `cohort.cfg.excludeTags` to hard-exclude
+probes from that cohort's selection. Different cohorts in the same measurement can have
+different exclusion lists.
 
 **Reusing cohort configs.** Because `cohorts` is a plain TypeScript array, cohort
 objects can be defined as constants or factory functions and referenced across multiple

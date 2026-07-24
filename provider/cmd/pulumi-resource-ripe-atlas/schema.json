@@ -32,11 +32,20 @@
             },
             "namespace": {
                 "type": "string",
-                "description": "Namespace embedded in each measurement description on the RIPE Atlas API. Used to distinguish measurements across Terraform states or workspaces. Defaults to \"terraform-provider-ripe-atlas\"."
+                "description": "Namespace embedded in each measurement description on the RIPE Atlas API. Used to distinguish measurements across Terraform states or workspaces. Defaults to \"terraform-provider-ripe-atlas\".",
+                "default": "pulumi-atlas"
             },
             "snapshot": {
                 "type": "string",
-                "description": "Path to the probe snapshot JSON file. Falls back to RIPE_ATLAS_SNAPSHOT env var."
+                "description": "Path to a pre-fetched probe snapshot JSON file. When set, probes are read directly from this file with no freshness check. Falls back to RIPE_ATLAS_SNAPSHOT env var. Mutually exclusive with snapshot_cache_path."
+            },
+            "snapshotCachePath": {
+                "type": "string",
+                "description": "Path for the auto-managed probe cache file. When snapshot is not set, probes are served from this cache and refreshed from the RIPE Atlas API when stale. Defaults to /tmp/atlasctl-probes.json."
+            },
+            "snapshotTtl": {
+                "type": "string",
+                "description": "Maximum age of the cached probe list before it is refreshed from the RIPE Atlas API. Go duration string (e.g. \"2h\", \"30m\"). Only applies when snapshot is not set. Defaults to 2h0m0s."
             }
         }
     },
@@ -46,12 +55,20 @@
                 "cfg": {
                     "$ref": "#/types/ripe-atlas:index/MeasurementCohortCfg:MeasurementCohortCfg"
                 },
+                "dailyCredits": {
+                    "type": "integer",
+                    "description": "Projected RIPE Atlas credit burn per day for this cohort.\n"
+                },
                 "excludeProbeIds": {
                     "type": "array",
                     "items": {
                         "type": "integer"
                     },
                     "description": "Set of probe IDs never selected in this cohort.\n"
+                },
+                "hourlyCredits": {
+                    "type": "integer",
+                    "description": "Projected RIPE Atlas credit burn per hour for this cohort.\n"
                 },
                 "includeProbeIds": {
                     "type": "array",
@@ -98,6 +115,8 @@
             "language": {
                 "nodejs": {
                     "requiredOutputs": [
+                        "dailyCredits",
+                        "hourlyCredits",
                         "intervalSeconds",
                         "maxProbesPerCell",
                         "msmId",
@@ -117,12 +136,34 @@
                     },
                     "description": "Map of ASN (string key) to score bonus.\n"
                 },
+                "cities": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/types/ripe-atlas:index/MeasurementCohortCfgCity:MeasurementCohortCfgCity"
+                    },
+                    "description": "City clusters with scoring bonuses and H3 cell density coefficients for probes within their radius.\n"
+                },
                 "countries": {
                     "type": "object",
                     "additionalProperties": {
                         "type": "integer"
                     },
                     "description": "Map of ISO 3166-1 alpha-2 country code to score bonus.\n"
+                },
+                "disableContinentalShuffle": {
+                    "type": "boolean",
+                    "description": "Disable round-robin continental zone interleaving within band tiers. Default false (shuffle enabled).\n"
+                },
+                "excludeTags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "description": "Probe tags that hard-exclude a probe from this cohort.\n"
+                },
+                "h3Resolution": {
+                    "type": "integer",
+                    "description": "H3 cell resolution for geographic diversity (1–15, default 3).\n"
                 },
                 "stability": {
                     "type": "object",
@@ -140,6 +181,42 @@
                 }
             },
             "type": "object"
+        },
+        "ripe-atlas:index/MeasurementCohortCfgCity:MeasurementCohortCfgCity": {
+            "properties": {
+                "densityCoefficient": {
+                    "type": "number",
+                    "description": "H3 cell capacity multiplier for probes within this city. Values \u003e 1 relax the per-cell limit; values \u003c 1 tighten it.\n"
+                },
+                "lat": {
+                    "type": "number",
+                    "description": "City center latitude.\n"
+                },
+                "lon": {
+                    "type": "number",
+                    "description": "City center longitude.\n"
+                },
+                "name": {
+                    "type": "string",
+                    "description": "Human-readable city name.\n"
+                },
+                "radiusKm": {
+                    "type": "number",
+                    "description": "Radius in kilometers within which probes are considered part of this city.\n"
+                },
+                "score": {
+                    "type": "integer",
+                    "description": "Additive scoring bonus for probes within radius_km. 0 means no bonus.\n"
+                }
+            },
+            "type": "object",
+            "required": [
+                "densityCoefficient",
+                "lat",
+                "lon",
+                "name",
+                "radiusKm"
+            ]
         }
     },
     "provider": {
@@ -155,7 +232,15 @@
             },
             "snapshot": {
                 "type": "string",
-                "description": "Path to the probe snapshot JSON file. Falls back to RIPE_ATLAS_SNAPSHOT env var."
+                "description": "Path to a pre-fetched probe snapshot JSON file. When set, probes are read directly from this file with no freshness check. Falls back to RIPE_ATLAS_SNAPSHOT env var. Mutually exclusive with snapshot_cache_path."
+            },
+            "snapshotCachePath": {
+                "type": "string",
+                "description": "Path for the auto-managed probe cache file. When snapshot is not set, probes are served from this cache and refreshed from the RIPE Atlas API when stale. Defaults to /tmp/atlasctl-probes.json."
+            },
+            "snapshotTtl": {
+                "type": "string",
+                "description": "Maximum age of the cached probe list before it is refreshed from the RIPE Atlas API. Go duration string (e.g. \"2h\", \"30m\"). Only applies when snapshot is not set. Defaults to 2h0m0s."
             }
         },
         "inputProperties": {
@@ -165,11 +250,20 @@
             },
             "namespace": {
                 "type": "string",
-                "description": "Namespace embedded in each measurement description on the RIPE Atlas API. Used to distinguish measurements across Terraform states or workspaces. Defaults to \"terraform-provider-ripe-atlas\"."
+                "description": "Namespace embedded in each measurement description on the RIPE Atlas API. Used to distinguish measurements across Terraform states or workspaces. Defaults to \"terraform-provider-ripe-atlas\".",
+                "default": "pulumi-atlas"
             },
             "snapshot": {
                 "type": "string",
-                "description": "Path to the probe snapshot JSON file. Falls back to RIPE_ATLAS_SNAPSHOT env var."
+                "description": "Path to a pre-fetched probe snapshot JSON file. When set, probes are read directly from this file with no freshness check. Falls back to RIPE_ATLAS_SNAPSHOT env var. Mutually exclusive with snapshot_cache_path."
+            },
+            "snapshotCachePath": {
+                "type": "string",
+                "description": "Path for the auto-managed probe cache file. When snapshot is not set, probes are served from this cache and refreshed from the RIPE Atlas API when stale. Defaults to /tmp/atlasctl-probes.json."
+            },
+            "snapshotTtl": {
+                "type": "string",
+                "description": "Maximum age of the cached probe list before it is refreshed from the RIPE Atlas API. Go duration string (e.g. \"2h\", \"30m\"). Only applies when snapshot is not set. Defaults to 2h0m0s."
             }
         },
         "methods": {
@@ -190,11 +284,21 @@
                     },
                     "description": "Ordered list of cohorts. Each creates one RIPE Atlas measurement. Selection runs in order; each cohort draws from the remaining probe pool after prior cohorts have claimed their probes."
                 },
-                "excludeTags": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
+                "httpMethod": {
+                    "type": "string",
+                    "description": "HTTP method: GET, HEAD (default), or POST. Only valid for http measurements."
+                },
+                "httpPath": {
+                    "type": "string",
+                    "description": "URL path for HTTP measurements (default \"/\")."
+                },
+                "httpPort": {
+                    "type": "integer",
+                    "description": "TCP port for HTTP measurements (default 80)."
+                },
+                "httpVersion": {
+                    "type": "string",
+                    "description": "HTTP version: \"1.0\" or \"1.1\". Only valid for http measurements."
                 },
                 "msmType": {
                     "type": "string"
@@ -204,6 +308,14 @@
                 },
                 "target": {
                     "type": "string"
+                },
+                "totalDailyCredits": {
+                    "type": "integer",
+                    "description": "Projected RIPE Atlas credit burn per day, summed across all cohorts."
+                },
+                "totalHourlyCredits": {
+                    "type": "integer",
+                    "description": "Projected RIPE Atlas credit burn per hour, summed across all cohorts."
                 }
             },
             "required": [
@@ -211,7 +323,9 @@
                 "cohorts",
                 "msmType",
                 "name",
-                "target"
+                "target",
+                "totalDailyCredits",
+                "totalHourlyCredits"
             ],
             "inputProperties": {
                 "af": {
@@ -224,11 +338,21 @@
                     },
                     "description": "Ordered list of cohorts. Each creates one RIPE Atlas measurement. Selection runs in order; each cohort draws from the remaining probe pool after prior cohorts have claimed their probes."
                 },
-                "excludeTags": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
+                "httpMethod": {
+                    "type": "string",
+                    "description": "HTTP method: GET, HEAD (default), or POST. Only valid for http measurements."
+                },
+                "httpPath": {
+                    "type": "string",
+                    "description": "URL path for HTTP measurements (default \"/\")."
+                },
+                "httpPort": {
+                    "type": "integer",
+                    "description": "TCP port for HTTP measurements (default 80)."
+                },
+                "httpVersion": {
+                    "type": "string",
+                    "description": "HTTP version: \"1.0\" or \"1.1\". Only valid for http measurements."
                 },
                 "msmType": {
                     "type": "string"
@@ -259,11 +383,21 @@
                         },
                         "description": "Ordered list of cohorts. Each creates one RIPE Atlas measurement. Selection runs in order; each cohort draws from the remaining probe pool after prior cohorts have claimed their probes."
                     },
-                    "excludeTags": {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        }
+                    "httpMethod": {
+                        "type": "string",
+                        "description": "HTTP method: GET, HEAD (default), or POST. Only valid for http measurements."
+                    },
+                    "httpPath": {
+                        "type": "string",
+                        "description": "URL path for HTTP measurements (default \"/\")."
+                    },
+                    "httpPort": {
+                        "type": "integer",
+                        "description": "TCP port for HTTP measurements (default 80)."
+                    },
+                    "httpVersion": {
+                        "type": "string",
+                        "description": "HTTP version: \"1.0\" or \"1.1\". Only valid for http measurements."
                     },
                     "msmType": {
                         "type": "string"
@@ -273,6 +407,14 @@
                     },
                     "target": {
                         "type": "string"
+                    },
+                    "totalDailyCredits": {
+                        "type": "integer",
+                        "description": "Projected RIPE Atlas credit burn per day, summed across all cohorts."
+                    },
+                    "totalHourlyCredits": {
+                        "type": "integer",
+                        "description": "Projected RIPE Atlas credit burn per hour, summed across all cohorts."
                     }
                 },
                 "type": "object"
