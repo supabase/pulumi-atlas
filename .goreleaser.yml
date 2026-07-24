@@ -11,11 +11,11 @@ builds:
     env:
       - CGO_ENABLED=0
     goos:
-      - linux
+      # - linux restore later
       - darwin
-      - windows
+      # - windows retstore later
     goarch:
-      - amd64
+      # - amd64 restore later
       - arm64
     ignore:
       - goos: windows
@@ -27,7 +27,7 @@ archives:
   - id: pulumi-resource-ripe-atlas
     builds:
       - pulumi-resource-ripe-atlas
-    name_template: "pulumi-resource-{{ .ProjectName }}-v{{ .Version }}-{{ .Os }}-{{ .Arch }}"
+    name_template: "pulumi-resource-ripe-atlas-v{{ .Version }}-{{ .Os }}-{{ .Arch }}"
     formats:
       - tar.gz
     format_overrides:
