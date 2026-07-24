@@ -23,7 +23,7 @@ The only file in this repo that requires editing when resources change upstream 
 
 Manages a group of RIPE Atlas measurements sharing a common target and measurement type. Each cohort in the `cohorts` list creates one RIPE Atlas measurement ID from a distinct, non-overlapping slice of the probe pool. Cohorts are selected in declaration order.
 
-Immutable attributes (`name`, `target`, `msmType`, `af`, `cohorts[*].name`, `cohorts[*].intervalSeconds`) trigger replacement on change. All other attributes are mutable in place: changes to scoring weights or probe counts re-run selection on the next plan, and the resulting diff drives `AddParticipants` or `RemoveParticipants` on the running measurements without recreating them.
+Immutable attributes (`name`, `target`, `msmType`, `af`, HTTP measurement fields, `cohorts[*].name`, `cohorts[*].intervalSeconds`) trigger replacement on change. All other attributes are mutable in place: changes to scoring weights or probe counts re-run selection on the next plan, and the resulting diff drives `AddParticipants` or `RemoveParticipants` on the running measurements without recreating them.
 
 **Inputs**
 
@@ -31,10 +31,20 @@ Immutable attributes (`name`, `target`, `msmType`, `af`, `cohorts[*].name`, `coh
 |-----------|------|----------|-----------|-------------|
 | `name` | string | yes | yes | Logical measurement name. |
 | `target` | string | yes | yes | DNS name or IP address. |
-| `msmType` | string | yes | yes | One of `dns`, `ping`, `tls`, `traceroute`. |
+| `msmType` | string | yes | yes | One of `dns`, `ping`, `tls`, `traceroute`, `http`. |
 | `af` | int | no | yes | Address family: `4` or `6`. Default `4`. |
-| `excludeTags` | list(string) | no | no | Probe tags that hard-exclude a probe from all cohort selection. |
+| `httpMethod` | string | no | yes | HTTP method: `GET`, `HEAD` (default), or `POST`. Only valid when `msmType` is `http`. |
+| `httpPath` | string | no | yes | URL path for HTTP measurements. Default `/`. |
+| `httpPort` | int | no | yes | TCP port for HTTP measurements. Default `80`. |
+| `httpVersion` | string | no | yes | HTTP version: `"1.0"` or `"1.1"`. Only valid when `msmType` is `http`. |
 | `cohorts` | list(object) | yes | partial | Ordered list of cohort configs (see below). |
+
+**Measurement-level computed outputs**
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `totalHourlyCredits` | int | Projected RIPE Atlas credit burn per hour, summed across all cohorts. |
+| `totalDailyCredits` | int | Projected RIPE Atlas credit burn per day, summed across all cohorts. |
 
 **`cohorts[*]` fields**
 
@@ -46,7 +56,31 @@ Immutable attributes (`name`, `target`, `msmType`, `af`, `cohorts[*].name`, `coh
 | `intervalSeconds` | int | yes | yes | Measurement interval in seconds. Minimum 60. |
 | `includeProbeIds` | list(int) | no | no | Probes always included regardless of scoring or H3 cap. |
 | `excludeProbeIds` | list(int) | no | no | Probes never selected in this cohort. |
-| `cfg` | object | no | no | Additive scoring weights: `asn`, `tags`, `countries`, `stability`. |
+| `cfg` | object | no | no | Probe selection config: scoring weights, exclusions, geographic constraints. See below. |
+
+**`cohorts[*].cfg` fields**
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `asn` | map(int) | Additive scoring weight per IPv4 ASN. Key is ASN as a string. |
+| `tags` | map(int) | Additive scoring weight per probe tag. |
+| `countries` | map(int) | Additive scoring weight per ISO 3166-1 alpha-2 country code. |
+| `stability` | map(int) | Additive scoring weight per stability tag (e.g. `system-ipv4-stable-90d`). |
+| `excludeTags` | list(string) | Probe tags that hard-exclude a probe from this cohort. |
+| `h3Resolution` | int | H3 cell resolution for geographic diversity (1–15, default 3). |
+| `cities` | list(object) | City clusters with scoring bonuses and H3 cell density overrides. See below. |
+| `disableContinentalShuffle` | bool | When `true`, disables round-robin continental zone interleaving within band tiers. Default `false`. |
+
+**`cohorts[*].cfg.cities[*]` fields**
+
+| Attribute | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `name` | string | yes | Human-readable city label. |
+| `lat` | float | yes | City center latitude. |
+| `lon` | float | yes | City center longitude. |
+| `radiusKm` | float | yes | Radius in kilometers within which probes are considered part of this city. |
+| `densityCoefficient` | float | yes | H3 cell capacity multiplier for probes within this city. Values above `1.0` allow more probes per cell; values below `1.0` restrict it. |
+| `score` | int | no | Additive scoring bonus for probes within `radiusKm`. |
 
 **Per-cohort computed outputs** (accessed via `cohorts[*]`)
 
@@ -54,13 +88,17 @@ Immutable attributes (`name`, `target`, `msmType`, `af`, `cohorts[*].name`, `coh
 |-----------|------|-------------|
 | `msmId` | int | RIPE Atlas measurement ID assigned to this cohort. |
 | `probeIds` | list(int) | Probe IDs selected for this cohort. |
+| `hourlyCredits` | int | Projected RIPE Atlas credit burn per hour for this cohort. |
+| `dailyCredits` | int | Projected RIPE Atlas credit burn per day for this cohort. |
 
 ## Provider configuration
 
 | Attribute | Env var | Description |
 |-----------|---------|-------------|
 | `apiKey` | `RIPE_ATLAS_API_KEY` | RIPE Atlas API key. Marked sensitive. |
-| `snapshot` | `RIPE_ATLAS_SNAPSHOT` | Path to `snapshot.json` produced by `atlasctl refresh`. |
+| `snapshot` | `RIPE_ATLAS_SNAPSHOT` | Path to a pre-fetched probe snapshot JSON file. Probes are read directly from this file with no freshness check. Mutually exclusive with `snapshotCachePath`. |
+| `snapshotCachePath` | — | Path for the auto-managed probe cache file. When `snapshot` is not set, probes are served from this cache and refreshed from the RIPE Atlas API when stale. Defaults to `/tmp/atlasctl-probes.json`. |
+| `snapshotTtl` | — | Maximum age of the cached probe list before refresh. Go duration string, e.g. `"2h"` or `"30m"`. Only applies when `snapshot` is not set. Defaults to `2h`. |
 | `namespace` | — | Prefix for RIPE Atlas measurement tags used to encode state. Defaults to `pulumi-atlas`. Set a distinct value per stack when multiple stacks manage RIPE Atlas measurements, to prevent tag collisions (analogous to separate Terraform state files). |
 
 The snapshot is configured once at the provider level and shared across all resources.
@@ -91,10 +129,9 @@ const provider = new ripeAtlas.Provider("ripe-atlas", {
 });
 
 const dnsCanary = new ripeAtlas.Measurement("dns-canary", {
-    name:        "dns-canary",
-    target:      "canary.supabase.co",
-    msmType:     "dns",
-    excludeTags: ["broken", "system-flakey-connection"],
+    name:    "dns-canary",
+    target:  "canary.supabase.co",
+    msmType: "dns",
     cohorts: [
         {
             name:             "high-freq",
@@ -102,8 +139,9 @@ const dnsCanary = new ripeAtlas.Measurement("dns-canary", {
             maxProbesPerCell: 1,
             intervalSeconds:  60,
             cfg: {
-                asn:       { "7018": 10, "7922": 8 },
-                stability: { "system-ipv4-stable-90d": 5 },
+                asn:         { "7018": 10, "7922": 8 },
+                stability:   { "system-ipv4-stable-90d": 5 },
+                excludeTags: ["broken", "system-flakey-connection"],
             },
         },
         {
@@ -115,12 +153,13 @@ const dnsCanary = new ripeAtlas.Measurement("dns-canary", {
     ],
 }, { provider });
 
-export const highFreqMsmId = dnsCanary.cohorts.apply(cs => cs[0].msmId);
-export const lowFreqMsmId  = dnsCanary.cohorts.apply(cs => cs[1].msmId);
+export const highFreqMsmId      = dnsCanary.cohorts.apply(cs => cs[0].msmId);
+export const highFreqDailyBurn  = dnsCanary.cohorts.apply(cs => cs[0].dailyCredits);
+export const lowFreqMsmId       = dnsCanary.cohorts.apply(cs => cs[1].msmId);
+export const totalDailyCredits  = dnsCanary.totalDailyCredits;
 ```
 
-`msmId` and `probeIds` are per-cohort computed outputs, available after `pulumi up`
-but unknown during preview.
+`msmId`, `probeIds`, `hourlyCredits`, and `dailyCredits` are per-cohort computed outputs, populated at plan time and available after `pulumi up`. `totalHourlyCredits` and `totalDailyCredits` on the measurement sum across all cohorts.
 
 ## Credit costs
 
@@ -128,6 +167,7 @@ but unknown during preview.
 |------|--------------------|
 | dns | 10 |
 | tls | 10 |
+| http | 10 |
 | ping | 3 |
 | traceroute | 30 |
 
