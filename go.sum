@@ -546,6 +546,8 @@ github.com/supabase/atlasctl v0.1.4 h1:+mp5HnEb+mUR7ujDweccwgDFyQKOe7JRqx8R11Wcc
 github.com/supabase/atlasctl v0.1.4/go.mod h1:f7LUuDXyjnLu7HVq0O+Gv+KLmF5GZw4xBnlwPAMFC+U=
 github.com/supabase/terraform-provider-ripe-atlas v0.1.6 h1:lCzIzdSPji5sQYsbQYBge7gSy8BU6DXFnF+tjDRdotc=
 github.com/supabase/terraform-provider-ripe-atlas v0.1.6/go.mod h1:PR+IB1WcKsQ9HzwQXs5Zx0CzoNhNQ2AgzKX3v+sEIfo=
+github.com/supabase/terraform-provider-ripe-atlas v0.1.7 h1:L5xKP0PBMGsh+0gHOYOExUJxZhXKIP7tuArIyRmRamM=
+github.com/supabase/terraform-provider-ripe-atlas v0.1.7/go.mod h1:PR+IB1WcKsQ9HzwQXs5Zx0CzoNhNQ2AgzKX3v+sEIfo=
 github.com/teekennedy/goldmark-markdown v0.3.0 h1:ik9/biVGCwGWFg8dQ3KVm2pQ/wiiG0whYiUcz9xH0W8=
 github.com/teekennedy/goldmark-markdown v0.3.0/go.mod h1:kMhDz8La77A9UHvJGsxejd0QUflN9sS+QXCqnhmxmNo=
 github.com/texttheater/golang-levenshtein v1.0.1 h1:+cRNoVrfiwufQPhoMzB6N0Yf/Mqajr6t1lOv8GyGE2U=

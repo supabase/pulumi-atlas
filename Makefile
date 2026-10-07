@@ -15,6 +15,7 @@ generate: $(BINDIR)/$(TFGEN)
 	GOWORK=off ./$(BINDIR)/$(TFGEN) go       --out sdk/go
 	GOWORK=off ./$(BINDIR)/$(TFGEN) nodejs   --out sdk/nodejs
 	GOWORK=off ./$(BINDIR)/$(TFGEN) python   --out sdk/python
+	GOWORK=off ./$(BINDIR)/$(TFGEN) dotnet   --out sdk/dotnet
 
 $(BINDIR)/$(TFGEN):
 	go build -ldflags "$(LDFLAGS)" -o $(BINDIR)/$(TFGEN) ./provider/cmd/$(TFGEN)
