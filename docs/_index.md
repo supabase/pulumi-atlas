@@ -1,16 +1,18 @@
-# SDK snippets
-
-All examples declare one `Measurement` resource with two cohorts: `high-freq` (30 probes,
-every 60 s) and `low-freq` (100 probes, every 15 min). Both cohorts are managed by the
-same resource; probe selection runs in declaration order, with each cohort drawing from
-the remaining pool after earlier cohorts have claimed their probes.
-
-The snapshot path is set once at the provider level. Run `atlasctl refresh` to update it
-before running `pulumi preview`.
-
+---
+title: RIPE Atlas
+meta_desc: Manage RIPE Atlas measurements from Pulumi. Select probe cohorts, track credit burn, and integrate active network monitoring into your infrastructure as code.
+layout: package
 ---
 
-## TypeScript
+The RIPE Atlas provider for Pulumi lets you declare and manage [RIPE Atlas](https://atlas.ripe.net) measurements as infrastructure. Probe selection, cohort drawdown, and participant updates are handled at plan time — `pulumi preview` shows which probes will be selected and the projected credit cost before anything is applied.
+
+Each `Measurement` resource manages one or more cohorts. Each cohort draws probes from the remaining pool after earlier cohorts have claimed theirs, so a single resource can express a tiered monitoring strategy (high-frequency anchors, lower-frequency broad coverage) without probe overlap.
+
+## Example
+
+{{< chooser language "typescript,python,go,csharp" >}}
+
+{{% choosable language typescript %}}
 
 ```typescript
 import * as pulumi from "@pulumi/pulumi";
@@ -47,15 +49,12 @@ const dnsCanary = new ripeAtlas.Measurement("dns-canary", {
 }, { provider });
 
 export const highFreqMsmId     = dnsCanary.cohorts.apply(cs => cs[0].msmId);
-export const highFreqProbeIds  = dnsCanary.cohorts.apply(cs => cs[0].probeIds);
-export const highFreqDailyBurn = dnsCanary.cohorts.apply(cs => cs[0].dailyCredits);
-export const lowFreqMsmId      = dnsCanary.cohorts.apply(cs => cs[1].msmId);
 export const totalDailyCredits = dnsCanary.totalDailyCredits;
 ```
 
----
+{{% /choosable %}}
 
-## Python
+{{% choosable language python %}}
 
 ```python
 import os
@@ -94,15 +93,12 @@ dns_canary = ripe_atlas.Measurement("dns-canary",
 )
 
 pulumi.export("high_freq_msm_id",     dns_canary.cohorts[0].msm_id)
-pulumi.export("high_freq_probe_ids",  dns_canary.cohorts[0].probe_ids)
-pulumi.export("high_freq_daily_burn", dns_canary.cohorts[0].daily_credits)
-pulumi.export("low_freq_msm_id",      dns_canary.cohorts[1].msm_id)
 pulumi.export("total_daily_credits",  dns_canary.total_daily_credits)
 ```
 
----
+{{% /choosable %}}
 
-## Go
+{{% choosable language go %}}
 
 ```go
 package main
@@ -151,17 +147,15 @@ func main() {
         }
 
         ctx.Export("highFreqMsmId",     dnsCanary.Cohorts.Index(pulumi.Int(0)).MsmId())
-        ctx.Export("highFreqDailyBurn", dnsCanary.Cohorts.Index(pulumi.Int(0)).DailyCredits())
-        ctx.Export("lowFreqMsmId",      dnsCanary.Cohorts.Index(pulumi.Int(1)).MsmId())
         ctx.Export("totalDailyCredits", dnsCanary.TotalDailyCredits())
         return nil
     })
 }
 ```
 
----
+{{% /choosable %}}
 
-## C#
+{{% choosable language csharp %}}
 
 ```csharp
 using System.Collections.Generic;
@@ -209,35 +203,11 @@ return await Deployment.RunAsync(() =>
     return new Dictionary<string, object?>
     {
         ["highFreqMsmId"]     = dnsCanary.Cohorts.Apply(cs => cs[0].MsmId),
-        ["highFreqDailyBurn"] = dnsCanary.Cohorts.Apply(cs => cs[0].DailyCredits),
-        ["lowFreqMsmId"]      = dnsCanary.Cohorts.Apply(cs => cs[1].MsmId),
         ["totalDailyCredits"] = dnsCanary.TotalDailyCredits,
     };
 });
 ```
 
----
+{{% /choosable %}}
 
-## Notes
-
-**One resource, multiple RIPE Atlas measurements.** Each cohort element in the list
-creates one RIPE Atlas measurement ID. Probe selection runs across all cohorts in order:
-each cohort draws from the pool of probes not already claimed by earlier cohorts in the
-same resource.
-
-**Snapshot is provider-level.** Configure it once via the provider block or the
-`RIPE_ATLAS_SNAPSHOT` environment variable. It does not appear on individual resources.
-
-**`msmId`, `probeIds`, `hourlyCredits`, and `dailyCredits` are per-cohort computed outputs.**
-They are populated at plan time (during `pulumi preview`) and resolve definitively after
-`pulumi up`. Access them by index on the `cohorts` output array. `totalHourlyCredits` and
-`totalDailyCredits` on the measurement sum across all cohorts.
-
-**`excludeTags` is per-cohort.** Set it inside `cohort.cfg.excludeTags` to hard-exclude
-probes from that cohort's selection. Different cohorts in the same measurement can have
-different exclusion lists.
-
-**Reusing cohort configs.** Because `cohorts` is a plain TypeScript array, cohort
-objects can be defined as constants or factory functions and referenced across multiple
-`Measurement` resources. Each resource still runs its own independent selection against
-the full probe pool.
+{{< /chooser >}}

@@ -28,6 +28,9 @@ func Provider() tfbridge.ProviderInfo {
 		JavaScript: &tfbridge.JavaScriptInfo{
 			PackageName: "@supabase/ripe-atlas",
 		},
+		CSharp: &tfbridge.CSharpInfo{
+			RootNamespace: "Supabase",
+		},
 		Config: map[string]*tfbridge.SchemaInfo{
 			"api_key": {
 				Secret: tfbridge.True(),

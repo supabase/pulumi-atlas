@@ -6,7 +6,7 @@ require (
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/pulumi/pulumi-terraform-bridge/v3 v3.134.0
 	github.com/pulumi/pulumi/sdk/v3 v3.251.0
-	github.com/supabase/terraform-provider-ripe-atlas v0.1.6
+	github.com/supabase/terraform-provider-ripe-atlas v0.1.7
 )
 
 require (
