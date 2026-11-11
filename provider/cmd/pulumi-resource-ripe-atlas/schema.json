@@ -226,6 +226,196 @@
                 "name",
                 "radiusKm"
             ]
+        },
+        "ripe-atlas:index/MeasurementCommon:MeasurementCommon": {
+            "properties": {
+                "autoTopup": {
+                    "type": "boolean",
+                    "description": "Replace probes that go offline. Implied by\u003cspan pulumi-lang-nodejs=\" autoTopupPrbDaysOff \" pulumi-lang-dotnet=\" AutoTopupPrbDaysOff \" pulumi-lang-go=\" autoTopupPrbDaysOff \" pulumi-lang-python=\" auto_topup_prb_days_off \" pulumi-lang-yaml=\" autoTopupPrbDaysOff \" pulumi-lang-java=\" autoTopupPrbDaysOff \" pulumi-lang-hcl=\" auto_topup_prb_days_off \"\u003e autoTopupPrbDaysOff \u003c/span\u003eand auto_topup_prb_similarity.\n"
+                },
+                "autoTopupPrbDaysOff": {
+                    "type": "integer",
+                    "description": "Days a probe is offline before it is replaced.\n"
+                },
+                "autoTopupPrbSimilarity": {
+                    "type": "number",
+                    "description": "How similar a replacement probe must be, between 0 and 1.\n"
+                },
+                "billTo": {
+                    "type": "string",
+                    "description": "Charge credits to another RIPE Atlas account instead of your own. That account must have added you to its allowed billing list.\n"
+                },
+                "resolveOnProbe": {
+                    "type": "boolean",
+                    "description": "Resolve the target on each probe instead of once centrally.\n"
+                },
+                "skipDnsCheck": {
+                    "type": "boolean",
+                    "description": "Skip the platform's DNS check of the target at creation time.\n"
+                },
+                "spread": {
+                    "type": "integer",
+                    "description": "Seconds over which probe start times are spread within one interval.\n"
+                },
+                "startTime": {
+                    "type": "string",
+                    "description": "Measurement start time, RFC 3339 (for example 2026-12-01T00:00:00Z).\n"
+                },
+                "stopTime": {
+                    "type": "string",
+                    "description": "Measurement stop time, RFC 3339. Must be after start_time.\n"
+                },
+                "targetUpdateHours": {
+                    "type": "integer",
+                    "description": "Re-resolve the target every N hours.\n"
+                }
+            },
+            "type": "object"
+        },
+        "ripe-atlas:index/MeasurementDns:MeasurementDns": {
+            "properties": {
+                "includeQbuf": {
+                    "type": "boolean",
+                    "description": "Include the query packet sent by the probe in each result.\n"
+                },
+                "prependProbeId": {
+                    "type": "boolean",
+                    "description": "Prefix the queried name with the probe ID, giving a unique name per probe.\n"
+                },
+                "protocol": {
+                    "type": "string",
+                    "description": "UDP (default) or TCP.\n"
+                },
+                "queryClass": {
+                    "type": "string",
+                    "description": "IN (default) or CHAOS.\n"
+                },
+                "queryType": {
+                    "type": "string",
+                    "description": "Record type: A (default), AAAA, NS, MX, TXT, and so on.\n"
+                },
+                "retry": {
+                    "type": "integer",
+                    "description": "Times a query is retried after a failure. Platform default 0.\n"
+                },
+                "setDoBit": {
+                    "type": "boolean",
+                    "description": "Set the DNSSEC OK bit.\n"
+                },
+                "setNsidBit": {
+                    "type": "boolean",
+                    "description": "Ask the server to identify itself with the EDNS NSID option (RFC 5001), commonly used to see which anycast instance answered.\n"
+                },
+                "setRdBit": {
+                    "type": "boolean",
+                    "description": "Set the recursion desired bit.\n"
+                },
+                "timeout": {
+                    "type": "integer",
+                    "description": "Milliseconds to wait for a response before the query counts as failed. Platform default 5000.\n"
+                },
+                "udpPayloadSize": {
+                    "type": "integer",
+                    "description": "Maximum UDP response size in bytes advertised through EDNS0. Platform default 512.\n"
+                },
+                "useMacros": {
+                    "type": "boolean",
+                    "description": "Expand $p (probe ID), $r (random string) and $t (timestamp) in the target, for example to build unique names that bypass resolver caches.\n"
+                }
+            },
+            "type": "object"
+        },
+        "ripe-atlas:index/MeasurementHttp:MeasurementHttp": {
+            "properties": {
+                "extendedTiming": {
+                    "type": "boolean",
+                    "description": "Report additional timing detail in each result (for example time to resolve and time to first byte).\n"
+                },
+                "headerBytes": {
+                    "type": "integer",
+                    "description": "Maximum number of response header bytes to record in the result.\n"
+                },
+                "moreExtendedTiming": {
+                    "type": "boolean",
+                    "description": "Report even more timing detail than extended_timing.\n"
+                },
+                "queryString": {
+                    "type": "string",
+                    "description": "Appended to the request path (without the leading \"?\").\n"
+                }
+            },
+            "type": "object"
+        },
+        "ripe-atlas:index/MeasurementPing:MeasurementPing": {
+            "properties": {
+                "includeProbeId": {
+                    "type": "boolean",
+                    "description": "Put the probe ID (as ASCII digits) in the packet payload.\n"
+                },
+                "packetInterval": {
+                    "type": "integer",
+                    "description": "Milliseconds between the packets of one result.\n"
+                },
+                "packets": {
+                    "type": "integer",
+                    "description": "Packets per result. Platform default 3.\n"
+                }
+            },
+            "type": "object"
+        },
+        "ripe-atlas:index/MeasurementTls:MeasurementTls": {
+            "properties": {
+                "hostname": {
+                    "type": "string",
+                    "description": "Server name sent as SNI. Useful when the target is an IP address.\n"
+                },
+                "port": {
+                    "type": "integer",
+                    "description": "TCP port. Platform default 443.\n"
+                }
+            },
+            "type": "object"
+        },
+        "ripe-atlas:index/MeasurementTraceroute:MeasurementTraceroute": {
+            "properties": {
+                "destinationOptionSize": {
+                    "type": "integer",
+                    "description": "Size in bytes of an IPv6 destination options extension header added to each packet. Platform default 0 (none).\n"
+                },
+                "dontFragment": {
+                    "type": "boolean",
+                    "description": "Set the don't fragment bit on outgoing packets. Platform default false.\n"
+                },
+                "firstHop": {
+                    "type": "integer",
+                    "description": "TTL of the first hop probed. Platform default 1.\n"
+                },
+                "hopByHopOptionSize": {
+                    "type": "integer",
+                    "description": "Size in bytes of an IPv6 hop by hop options extension header added to each packet. Platform default 0 (none).\n"
+                },
+                "maxHops": {
+                    "type": "integer",
+                    "description": "TTL of the last hop probed. Platform default 32.\n"
+                },
+                "packets": {
+                    "type": "integer",
+                    "description": "Packets sent per hop. Platform default 3.\n"
+                },
+                "paris": {
+                    "type": "integer",
+                    "description": "Number of distinct flow identifiers to cycle through so load balanced paths are explored consistently (Paris traceroute). Platform default 16.\n"
+                },
+                "protocol": {
+                    "type": "string",
+                    "description": "ICMP, UDP or TCP. atlasctl defaults to UDP; the platform default is ICMP.\n"
+                },
+                "responseTimeout": {
+                    "type": "integer",
+                    "description": "Milliseconds to wait for a reply to each packet. Platform default 4000.\n"
+                }
+            },
+            "type": "object"
         }
     },
     "provider": {
@@ -293,6 +483,18 @@
                     },
                     "description": "Ordered list of cohorts. Each creates one RIPE Atlas measurement. Selection runs in order; each cohort draws from the remaining probe pool after prior cohorts have claimed their probes."
                 },
+                "common": {
+                    "$ref": "#/types/ripe-atlas:index/MeasurementCommon:MeasurementCommon",
+                    "description": "Options valid for every measurement type. Changing any value forces a new measurement."
+                },
+                "dns": {
+                    "$ref": "#/types/ripe-atlas:index/MeasurementDns:MeasurementDns",
+                    "description": "DNS options. Only valid when\u003cspan pulumi-lang-nodejs=\" msmType \" pulumi-lang-dotnet=\" MsmType \" pulumi-lang-go=\" msmType \" pulumi-lang-python=\" msm_type \" pulumi-lang-yaml=\" msmType \" pulumi-lang-java=\" msmType \" pulumi-lang-hcl=\" msm_type \"\u003e msmType \u003c/span\u003eis dns."
+                },
+                "http": {
+                    "$ref": "#/types/ripe-atlas:index/MeasurementHttp:MeasurementHttp",
+                    "description": "Additional HTTP options. Only valid when\u003cspan pulumi-lang-nodejs=\" msmType \" pulumi-lang-dotnet=\" MsmType \" pulumi-lang-go=\" msmType \" pulumi-lang-python=\" msm_type \" pulumi-lang-yaml=\" msmType \" pulumi-lang-java=\" msmType \" pulumi-lang-hcl=\" msm_type \"\u003e msmType \u003c/span\u003eis http."
+                },
                 "httpMethod": {
                     "type": "string",
                     "description": "HTTP method: GET, HEAD (default), or POST. Only valid for http measurements."
@@ -315,8 +517,16 @@
                 "name": {
                     "type": "string"
                 },
+                "ping": {
+                    "$ref": "#/types/ripe-atlas:index/MeasurementPing:MeasurementPing",
+                    "description": "Ping options. Only valid when\u003cspan pulumi-lang-nodejs=\" msmType \" pulumi-lang-dotnet=\" MsmType \" pulumi-lang-go=\" msmType \" pulumi-lang-python=\" msm_type \" pulumi-lang-yaml=\" msmType \" pulumi-lang-java=\" msmType \" pulumi-lang-hcl=\" msm_type \"\u003e msmType \u003c/span\u003eis ping."
+                },
                 "target": {
                     "type": "string"
+                },
+                "tls": {
+                    "$ref": "#/types/ripe-atlas:index/MeasurementTls:MeasurementTls",
+                    "description": "TLS options. Only valid when\u003cspan pulumi-lang-nodejs=\" msmType \" pulumi-lang-dotnet=\" MsmType \" pulumi-lang-go=\" msmType \" pulumi-lang-python=\" msm_type \" pulumi-lang-yaml=\" msmType \" pulumi-lang-java=\" msmType \" pulumi-lang-hcl=\" msm_type \"\u003e msmType \u003c/span\u003eis tls."
                 },
                 "totalDailyCredits": {
                     "type": "integer",
@@ -325,6 +535,10 @@
                 "totalHourlyCredits": {
                     "type": "integer",
                     "description": "Projected RIPE Atlas credit burn per hour, summed across all cohorts. Available as a known value during `pulumi preview` and `pulumi preview`.\n"
+                },
+                "traceroute": {
+                    "$ref": "#/types/ripe-atlas:index/MeasurementTraceroute:MeasurementTraceroute",
+                    "description": "Traceroute options. Only valid when\u003cspan pulumi-lang-nodejs=\" msmType \" pulumi-lang-dotnet=\" MsmType \" pulumi-lang-go=\" msmType \" pulumi-lang-python=\" msm_type \" pulumi-lang-yaml=\" msmType \" pulumi-lang-java=\" msmType \" pulumi-lang-hcl=\" msm_type \"\u003e msmType \u003c/span\u003eis traceroute."
                 }
             },
             "required": [
@@ -347,6 +561,18 @@
                     },
                     "description": "Ordered list of cohorts. Each creates one RIPE Atlas measurement. Selection runs in order; each cohort draws from the remaining probe pool after prior cohorts have claimed their probes."
                 },
+                "common": {
+                    "$ref": "#/types/ripe-atlas:index/MeasurementCommon:MeasurementCommon",
+                    "description": "Options valid for every measurement type. Changing any value forces a new measurement."
+                },
+                "dns": {
+                    "$ref": "#/types/ripe-atlas:index/MeasurementDns:MeasurementDns",
+                    "description": "DNS options. Only valid when\u003cspan pulumi-lang-nodejs=\" msmType \" pulumi-lang-dotnet=\" MsmType \" pulumi-lang-go=\" msmType \" pulumi-lang-python=\" msm_type \" pulumi-lang-yaml=\" msmType \" pulumi-lang-java=\" msmType \" pulumi-lang-hcl=\" msm_type \"\u003e msmType \u003c/span\u003eis dns."
+                },
+                "http": {
+                    "$ref": "#/types/ripe-atlas:index/MeasurementHttp:MeasurementHttp",
+                    "description": "Additional HTTP options. Only valid when\u003cspan pulumi-lang-nodejs=\" msmType \" pulumi-lang-dotnet=\" MsmType \" pulumi-lang-go=\" msmType \" pulumi-lang-python=\" msm_type \" pulumi-lang-yaml=\" msmType \" pulumi-lang-java=\" msmType \" pulumi-lang-hcl=\" msm_type \"\u003e msmType \u003c/span\u003eis http."
+                },
                 "httpMethod": {
                     "type": "string",
                     "description": "HTTP method: GET, HEAD (default), or POST. Only valid for http measurements."
@@ -369,8 +595,20 @@
                 "name": {
                     "type": "string"
                 },
+                "ping": {
+                    "$ref": "#/types/ripe-atlas:index/MeasurementPing:MeasurementPing",
+                    "description": "Ping options. Only valid when\u003cspan pulumi-lang-nodejs=\" msmType \" pulumi-lang-dotnet=\" MsmType \" pulumi-lang-go=\" msmType \" pulumi-lang-python=\" msm_type \" pulumi-lang-yaml=\" msmType \" pulumi-lang-java=\" msmType \" pulumi-lang-hcl=\" msm_type \"\u003e msmType \u003c/span\u003eis ping."
+                },
                 "target": {
                     "type": "string"
+                },
+                "tls": {
+                    "$ref": "#/types/ripe-atlas:index/MeasurementTls:MeasurementTls",
+                    "description": "TLS options. Only valid when\u003cspan pulumi-lang-nodejs=\" msmType \" pulumi-lang-dotnet=\" MsmType \" pulumi-lang-go=\" msmType \" pulumi-lang-python=\" msm_type \" pulumi-lang-yaml=\" msmType \" pulumi-lang-java=\" msmType \" pulumi-lang-hcl=\" msm_type \"\u003e msmType \u003c/span\u003eis tls."
+                },
+                "traceroute": {
+                    "$ref": "#/types/ripe-atlas:index/MeasurementTraceroute:MeasurementTraceroute",
+                    "description": "Traceroute options. Only valid when\u003cspan pulumi-lang-nodejs=\" msmType \" pulumi-lang-dotnet=\" MsmType \" pulumi-lang-go=\" msmType \" pulumi-lang-python=\" msm_type \" pulumi-lang-yaml=\" msmType \" pulumi-lang-java=\" msmType \" pulumi-lang-hcl=\" msm_type \"\u003e msmType \u003c/span\u003eis traceroute."
                 }
             },
             "requiredInputs": [
@@ -391,6 +629,18 @@
                             "$ref": "#/types/ripe-atlas:index/MeasurementCohort:MeasurementCohort"
                         },
                         "description": "Ordered list of cohorts. Each creates one RIPE Atlas measurement. Selection runs in order; each cohort draws from the remaining probe pool after prior cohorts have claimed their probes."
+                    },
+                    "common": {
+                        "$ref": "#/types/ripe-atlas:index/MeasurementCommon:MeasurementCommon",
+                        "description": "Options valid for every measurement type. Changing any value forces a new measurement."
+                    },
+                    "dns": {
+                        "$ref": "#/types/ripe-atlas:index/MeasurementDns:MeasurementDns",
+                        "description": "DNS options. Only valid when\u003cspan pulumi-lang-nodejs=\" msmType \" pulumi-lang-dotnet=\" MsmType \" pulumi-lang-go=\" msmType \" pulumi-lang-python=\" msm_type \" pulumi-lang-yaml=\" msmType \" pulumi-lang-java=\" msmType \" pulumi-lang-hcl=\" msm_type \"\u003e msmType \u003c/span\u003eis dns."
+                    },
+                    "http": {
+                        "$ref": "#/types/ripe-atlas:index/MeasurementHttp:MeasurementHttp",
+                        "description": "Additional HTTP options. Only valid when\u003cspan pulumi-lang-nodejs=\" msmType \" pulumi-lang-dotnet=\" MsmType \" pulumi-lang-go=\" msmType \" pulumi-lang-python=\" msm_type \" pulumi-lang-yaml=\" msmType \" pulumi-lang-java=\" msmType \" pulumi-lang-hcl=\" msm_type \"\u003e msmType \u003c/span\u003eis http."
                     },
                     "httpMethod": {
                         "type": "string",
@@ -414,8 +664,16 @@
                     "name": {
                         "type": "string"
                     },
+                    "ping": {
+                        "$ref": "#/types/ripe-atlas:index/MeasurementPing:MeasurementPing",
+                        "description": "Ping options. Only valid when\u003cspan pulumi-lang-nodejs=\" msmType \" pulumi-lang-dotnet=\" MsmType \" pulumi-lang-go=\" msmType \" pulumi-lang-python=\" msm_type \" pulumi-lang-yaml=\" msmType \" pulumi-lang-java=\" msmType \" pulumi-lang-hcl=\" msm_type \"\u003e msmType \u003c/span\u003eis ping."
+                    },
                     "target": {
                         "type": "string"
+                    },
+                    "tls": {
+                        "$ref": "#/types/ripe-atlas:index/MeasurementTls:MeasurementTls",
+                        "description": "TLS options. Only valid when\u003cspan pulumi-lang-nodejs=\" msmType \" pulumi-lang-dotnet=\" MsmType \" pulumi-lang-go=\" msmType \" pulumi-lang-python=\" msm_type \" pulumi-lang-yaml=\" msmType \" pulumi-lang-java=\" msmType \" pulumi-lang-hcl=\" msm_type \"\u003e msmType \u003c/span\u003eis tls."
                     },
                     "totalDailyCredits": {
                         "type": "integer",
@@ -424,6 +682,10 @@
                     "totalHourlyCredits": {
                         "type": "integer",
                         "description": "Projected RIPE Atlas credit burn per hour, summed across all cohorts. Available as a known value during `pulumi preview` and `pulumi preview`.\n"
+                    },
+                    "traceroute": {
+                        "$ref": "#/types/ripe-atlas:index/MeasurementTraceroute:MeasurementTraceroute",
+                        "description": "Traceroute options. Only valid when\u003cspan pulumi-lang-nodejs=\" msmType \" pulumi-lang-dotnet=\" MsmType \" pulumi-lang-go=\" msmType \" pulumi-lang-python=\" msm_type \" pulumi-lang-yaml=\" msmType \" pulumi-lang-java=\" msmType \" pulumi-lang-hcl=\" msm_type \"\u003e msmType \u003c/span\u003eis traceroute."
                     }
                 },
                 "type": "object"
