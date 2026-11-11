@@ -23,14 +23,25 @@ tfgen:
 	go build -ldflags "$(LDFLAGS)" -o $(BINDIR)/$(TFGEN) ./provider/cmd/$(TFGEN)
 
 PLATFORM_PULUMI ?= ../platform/pulumi
+SDK_DEST        = $(PLATFORM_PULUMI)/ripe-atlas-sdk
 
+# Copies the generated Node.js SDK into the platform monorepo.
+#
+# The platform copy is not a plain mirror of sdk/nodejs, so the sync is selective:
+#   - package.json and tsconfig.json are excluded. The platform versions use pnpm
+#     catalog: dependency refs and its own tsconfig; the generated ones would replace
+#     them with pinned versions and break the workspace. Only "version" is rewritten.
+#   - the copied sources are then run through the platform's formatter (oxfmt), so
+#     the diff contains real changes only and not quote or semicolon churn.
 sync-sdk: generate
 	rsync -a --delete \
 		--exclude=node_modules \
 		--exclude=package-lock.json \
-		sdk/nodejs/ $(PLATFORM_PULUMI)/ripe-atlas-sdk/
-	sed -i '' 's/"version": "[^"]*"/"version": "$(VERSION)"/' \
-		$(PLATFORM_PULUMI)/ripe-atlas-sdk/package.json
+		--exclude=package.json \
+		--exclude=tsconfig.json \
+		sdk/nodejs/ $(SDK_DEST)/
+	sed -i '' 's/"version": "[^"]*"/"version": "$(VERSION)"/' $(SDK_DEST)/package.json
+	cd $(PLATFORM_PULUMI)/.. && pnpm exec oxfmt pulumi/ripe-atlas-sdk
 
 install: build
 	mkdir -p "$(HOME)/.pulumi/plugins/resource-ripe-atlas-v0.0.1"
